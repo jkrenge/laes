@@ -10,8 +10,8 @@
 </p>
 
 <p align="center">
-  <a href="https://jkrenge.github.io/laes/">Website</a> ·
-  <a href="https://jkrenge.github.io/laes/help/">Help</a> ·
+  <a href="https://laesapp.com/">Website</a> ·
+  <a href="https://laesapp.com/help/">Help</a> ·
   <a href="https://github.com/jkrenge/laes/issues/new/choose">Report a bug</a>
 </p>
 
