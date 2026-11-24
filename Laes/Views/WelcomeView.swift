@@ -87,21 +87,21 @@ struct WelcomeView: View {
 struct HelpView: View {
     private static let topics: [(symbol: String, title: String, lines: [String])] = [
         ("calendar", "Getting around", [
-            "The window shows two weeks, Saturday to Friday: the top row is the first week, the bottom row the week after.",
+            "The window shows two weeks, starting on the day set in Settings (Saturday unless you change it): the top row is the first week, the bottom row the week after.",
             "Today (⌘T) jumps back to the current week. The arrows (⌘← and ⌘→) move one week at a time.",
-            "Click a meeting to see its time, place, category and status. Meetings can't be changed here.",
+            "Click a meeting to see its time, place, category and status. Meetings from Outlook can't be changed here; time you blocked in lães can be lengthened from its bottom edge or deleted.",
             "An all-day event tints its whole day column, unless it is marked free, cancelled or declined.",
         ]),
         ("checklist", "Tasks", [
             "Each day lists the tasks due that day, under the day's header. Overdue tasks collect on today, with their original date in red.",
             "Click a task to open it. That is where you tick it off, tick or rename subtasks, add a subtask, and write a note.",
-            "Drag a task onto another day to change its due date.",
+            "Drag a task onto another day to change its due date, or into a day's hours to block time for it.",
             "Click empty space under a day to add a task for that day. On a full day, scroll to “Add task” at the end of the list. New tasks go to your default To Do list.",
             "Completing a repeating task brings up its next occurrence a few seconds later.",
         ]),
         ("note.text", "Notes", [
             "Notes are Markdown files in a OneDrive folder only lães uses. The first line, starting with #, is the title.",
-            "New Note starts an empty note with the cursor in the title. Edit shows the Markdown, Done shows it formatted.",
+            "New Note starts an empty note with the cursor in the title. Edit Markdown shows the Markdown, Show Formatted shows it formatted.",
             "To write a note for a meeting, click the meeting and choose Add Note. Five minutes before it starts, lães reminds you of its notes.",
             "Search looks through the full text of every note. Notes written by an AI tool or on another device appear after the next refresh.",
         ]),

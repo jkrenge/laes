@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Help — lães (say “lanes”)</title>
+<meta name="description" content="How to use lães on Mac and iPhone: signing in, weeks, tasks, notes, the private group, the app icon, connecting an AI tool, sync and offline, troubleshooting and privacy.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0e0e13" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" href="../img/icon.png">
+<link rel="apple-touch-icon" href="../img/icon.png">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav">
+  <a class="brand" href="../">
+    <img src="../img/icon-192.webp" alt="" width="32" height="32">
+    <span>lães</span>
+  </a>
+  <nav aria-label="Main">
+    <a href="../#opinions">Opinions</a>
+    <a href="../#tour">Tour</a>
+    <a href="../#agent">Agent</a>
+    <a href="../#data">Your data</a>
+    <a class="nav-help" href="./" aria-current="page">Help</a>
+  </nav>
+  <a class="button small" href="../#beta">Join the beta</a>
+</header>
+
+<main id="main" class="doc">
+
+  <div class="doc-head">
+    <p class="eyebrow">Help</p>
+    <h1>Using lães</h1>
+    <p class="lede">How lães works on the Mac and iPhone, what each setting does, and what to try when something doesn't work. On the Mac, the same tips are in the app under Help › lães Help (⌘?).</p>
+  </div>
+
+  <nav class="toc" aria-labelledby="toc-title">
+    <h2 id="toc-title">On this page</h2>
+    <ol>
+      <li><a href="#getting-started">Getting started</a></li>
+      <li><a href="#getting-around">Getting around</a></li>
+      <li><a href="#tasks">Tasks</a></li>
+      <li><a href="#notes">Notes</a></li>
+      <li><a href="#private">Private group</a></li>
+      <li><a href="#settings">Settings</a></li>
+      <li><a href="#app-icon">App icon</a></li>
+      <li><a href="#ai">Connect an AI tool</a></li>
+      <li><a href="#sync">Sync and offline</a></li>
+      <li><a href="#troubleshooting">Troubleshooting</a></li>
+      <li><a href="#privacy">Privacy and your data</a></li>
+      <li><a href="#getting-help">Getting help</a></li>
+    </ol>
+  </nav>
+
+  <section id="getting-started" aria-labelledby="getting-started-title">
+    <h2 id="getting-started-title">Getting started</h2>
+    <p>lães is in private beta for Mac and iPhone. <a href="../#beta">Ask for an invite</a> on the home page. It needs macOS 15 or later, or iOS 18 or later. The source is <a href="https://github.com/jkrenge/laes">on GitHub</a> under the MIT licence, so you can also build it yourself.</p>
+    <ul>
+      <li>Sign in with the Microsoft work, school or personal account that holds your calendar. You can pick or add an account each time.</li>
+      <li>You need Outlook calendar and Microsoft To Do on that account. Notes also need OneDrive.</li>
+      <li>Before you sign in, lães shows sample data, so you can look around first.</li>
+      <li>If Microsoft says “Need admin approval”, see <a href="#troubleshooting">Troubleshooting</a>.</li>
+    </ul>
+  </section>
+
+  <section id="getting-around" aria-labelledby="getting-around-title">
+    <h2 id="getting-around-title">Getting around</h2>
+    <h3>On the Mac</h3>
+    <ul>
+      <li>The window shows two weeks, Saturday to Friday: the top row is the first week, the bottom row the week after. Each day lists its tasks on top and its meetings below.</li>
+      <li>The switch in the toolbar moves between Weeks, Tasks and Notes. ⌘L goes to the next one.</li>
+      <li>Today (⌘T) jumps back to the current week. The arrows (⌘← and ⌘→) move one week at a time.</li>
+      <li>Click a meeting to see its time, place, category, status and attendees. From there you can join an online meeting, add a note or open the meeting in Outlook. Meetings from Outlook can't be changed in lães.</li>
+      <li>An all-day event tints its whole day column, unless it is marked free, cancelled or declined.</li>
+    </ul>
+    <h3>On iPhone</h3>
+    <ul>
+      <li>Four tabs: Calendar, Tasks, Notes and Settings.</li>
+      <li>The calendar shows three days at a time and snaps day by day, with next week right below. Today brings you back.</li>
+      <li>Pull down on any list to refresh.</li>
+    </ul>
+    <h3 id="shortcuts">Keyboard shortcuts on the Mac</h3>
+    <div class="table-wrap">
+      <table class="keys">
+        <thead><tr><th scope="col">Keys</th><th scope="col">What they do</th></tr></thead>
+        <tbody>
+          <tr><td><kbd>⌘L</kbd></td><td>Switch to the next view: Weeks, Tasks, Notes</td></tr>
+          <tr><td><kbd>⌘T</kbd></td><td>Go to this week</td></tr>
+          <tr><td><kbd>⌘←</kbd> <kbd>⌘→</kbd></td><td>Previous or next week</td></tr>
+          <tr><td><kbd>⌘R</kbd></td><td>Refresh</td></tr>
+          <tr><td><kbd>⇧⌘P</kbd></td><td>Hide or show private items</td></tr>
+          <tr><td><kbd>⌘,</kbd></td><td>Settings</td></tr>
+          <tr><td><kbd>⌘?</kbd></td><td>lães Help</td></tr>
+        </tbody>
+        <tbody>
+          <tr><th scope="rowgroup" colspan="2">The Task menu, for the task open in the Tasks view</th></tr>
+          <tr><td><kbd>⌘↩</kbd></td><td>Mark as completed</td></tr>
+          <tr><td><kbd>⌘1</kbd></td><td>Due today</td></tr>
+          <tr><td><kbd>⌘2</kbd></td><td>Due tomorrow</td></tr>
+          <tr><td><kbd>⌘3</kbd></td><td>Due next week (the coming Monday)</td></tr>
+          <tr><td><kbd>⌘4</kbd></td><td>Due next weekend (the coming Saturday)</td></tr>
+          <tr><td><kbd>⌘0</kbd></td><td>Remove the due date</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="tasks" aria-labelledby="tasks-title">
+    <h2 id="tasks-title">Tasks</h2>
+    <p>Your tasks are your Microsoft To Do lists. Whatever you change in lães changes in To Do, and the other way round.</p>
+    <h3>In the weeks</h3>
+    <ul>
+      <li>Each day lists the tasks due that day, under the day's header. Overdue tasks collect on today, with their original date in red.</li>
+      <li>Click a task to open it. That is where you tick it off, rename it, choose its list, due date, reminder and repeat, mark it important, add and tick its steps, and write a note.</li>
+      <li>Drag a task onto another day to change its due date.</li>
+      <li>On the Mac, drag a task into the hours of a day to block an hour for it in your Outlook calendar. The new meeting is private and in the lães category. Drag its bottom edge to change when it ends, or click it and choose Delete to move it to Deleted Items in Outlook.</li>
+      <li>Click empty space under a day to add a task for that day. On a full day, scroll to “Add task” at the end of the list. New tasks go to your default To Do list.</li>
+      <li>Completing a repeating task brings up its next occurrence a few seconds later.</li>
+      <li>A task note is Markdown. A note with formatting from Outlook can only be edited in Outlook.</li>
+    </ul>
+    <h3>In the Tasks view</h3>
+    <ul>
+      <li>Planned, Important and All come first, then To Do's own lists, then yours. Planned can show All Planned, Overdue &amp; Today, Overdue, Today, Tomorrow, This Week or Later.</li>
+      <li>Sort by due date, list, title or importance.</li>
+      <li>New List adds a list. Right-click a list on the Mac, or swipe it on iPhone, to rename or delete it. Deleting a list deletes it and all its tasks from Microsoft To Do; this can't be undone.</li>
+      <li>Drag your lists into the order you like. Microsoft To Do can't sync the order of lists, so it is only stored on that device.</li>
+    </ul>
+    <h3 id="date-words">Dates and stars as you type</h3>
+    <p>In the add bar of the Tasks view, a day or a star in the title is picked up as you type. lães underlines the words, shows what they mean in a badge above the bar, and leaves them out of the title. “Call mom tomorrow star” becomes “Call mom”, due tomorrow and important.</p>
+    <div class="table-wrap">
+      <table class="keys">
+        <thead><tr><th scope="col">Type</th><th scope="col">And the task is</th></tr></thead>
+        <tbody>
+          <tr><td>today</td><td>due today</td></tr>
+          <tr><td>tomorrow</td><td>due tomorrow</td></tr>
+          <tr><td>next week</td><td>due the coming Monday</td></tr>
+          <tr><td>next month</td><td>due the 1st of next month</td></tr>
+          <tr><td>monday … sunday</td><td>due on the next one after today (“friday” on a Friday is next week's)</td></tr>
+          <tr><td>star, priority</td><td>marked important</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ul>
+      <li>A day may have on, by or due in front of it: “on Friday”, “by Friday”, “due Friday”.</li>
+      <li>Only whole words count, and only in English: “Mondays” and “today's” stay part of the title.</li>
+      <li>Meant it literally? Click or tap the badge to remove it, and the word stays in the title.</li>
+      <li>In Planned, a task without a day gets the day the add bar names, such as “Add a task due tomorrow”.</li>
+    </ul>
+    <h3 id="moving">Moving a task to another list</h3>
+    <p>Choose another list in the task's details. Microsoft To Do can't move a task between lists, so lães copies it into the new list with its note, steps, links and attached files, then deletes the original. If any part of the copy fails, the task stays where it was. Moving needs a connection. Tasks made from flagged emails stay in their list.</p>
+  </section>
+
+  <section id="notes" aria-labelledby="notes-title">
+    <h2 id="notes-title">Notes</h2>
+    <ul>
+      <li>Notes are Markdown files in a OneDrive folder only lães uses. The first line, starting with #, is the title. Microsoft asks you to allow the folder once.</li>
+      <li>New Note starts an empty note with the cursor in the title. Edit Markdown shows the Markdown, Show Formatted shows it formatted.</li>
+      <li>To write a note for a meeting, click the meeting and choose Add Note. Five minutes before it starts, lães reminds you of its notes.</li>
+      <li>Search looks through the full text of every note. Notes written by an AI tool or on another device appear after the next refresh.</li>
+      <li>Copy Note copies the whole note as Markdown. Delete removes the file from your OneDrive folder.</li>
+      <li>On iPhone, a bar above the keyboard adds headings, text styles, lists and indents. Its link button picks up the address you just copied.</li>
+    </ul>
+    <h3>The Markdown lães formats</h3>
+    <div class="table-wrap">
+      <table class="keys wrap">
+        <thead><tr><th scope="col">Write</th><th scope="col">For</th></tr></thead>
+        <tbody>
+          <tr><td><code># Title</code>, <code>## Section</code></td><td>Headings</td></tr>
+          <tr><td><code>- item</code></td><td>A bulleted list</td></tr>
+          <tr><td><code>- [ ] to do</code>, <code>- [x] done</code></td><td>A checklist</td></tr>
+          <tr><td><code>**bold**</code>, <code>*italic*</code>, <code>~~struck~~</code></td><td>Text styles</td></tr>
+          <tr><td><code>&lt;u&gt;underlined&lt;/u&gt;</code></td><td>Underline, which Markdown doesn't have</td></tr>
+          <tr><td><code>[text](https://…)</code></td><td>A link</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Tables, quotes and code blocks are shown as typed.</p>
+  </section>
+
+  <section id="private" aria-labelledby="private-title">
+    <h2 id="private-title">Private group</h2>
+    <p>The private group is what you'd rather not have on screen, say when you share your screen or show someone your calendar: meetings in the calendar categories and tasks on the lists you pick. Nothing changes in Microsoft 365.</p>
+    <ul>
+      <li>In Settings › Private Group, switch on the calendar categories and task lists that are private.</li>
+      <li>The eye button in the toolbar (⇧⌘P on the Mac) hides or shows all of them at once, for example before sharing your screen.</li>
+      <li>What the eye hides is hidden from connected AI tools too, including the notes of private meetings.</li>
+    </ul>
+  </section>
+
+  <section id="settings" aria-labelledby="settings-title">
+    <h2 id="settings-title">Settings</h2>
+    <p>On the Mac, open Settings with ⌘, or the gear in the toolbar. On iPhone, it is the fourth tab.</p>
+    <dl class="panes">
+      <dt>General</dt>
+      <dd>Your account, to sign in or out (on iPhone, above the other panes). <em>Keep notes in OneDrive</em>: switch this off if your account has no OneDrive or your organisation doesn't allow it; signing in then no longer asks for it. <em>Week starts on</em> (Saturday unless you change it), and the hours the calendar shows, 07:00 to 20:00 unless you change them.</dd>
+      <dt>Behavior <span class="tag">iPhone</span></dt>
+      <dd>Whether the Tasks tab opens with your lists, or with Planned: Overdue &amp; Today. Back then leads to your lists.</dd>
+      <dt>Private Group</dt>
+      <dd>The calendar categories and task lists the eye hides. See <a href="#private">Private group</a>.</dd>
+      <dt>App Icon</dt>
+      <dd>Arrange the stickers on the app icon. See <a href="#app-icon">App icon</a>.</dd>
+      <dt>AI Access <span class="tag">Mac</span></dt>
+      <dd>Lets AI tools on your Mac connect. See <a href="#ai">Connect an AI tool</a>.</dd>
+      <dt>About &amp; Legal</dt>
+      <dd>The version, what happens to your data, third-party software and trademarks. See <a href="#privacy">Privacy and your data</a>.</dd>
+    </dl>
+  </section>
+
+  <section id="app-icon" aria-labelledby="app-icon-title">
+    <h2 id="app-icon-title">App icon</h2>
+    <p>The icon is made of stickers, and you can arrange them in Settings › App Icon.</p>
+    <ul class="stickers" aria-label="The stickers">
+      <li><img src="../img/sticker-yellow-tilde.webp" alt="" width="240" height="204">Yellow tilde</li>
+      <li><img src="../img/sticker-white-tilde.webp" alt="" width="240" height="204">White tilde</li>
+      <li><img src="../img/sticker-name.webp" alt="" width="280" height="163">Name</li>
+      <li><img src="../img/sticker-page.webp" alt="" width="91" height="96">Calendar page</li>
+      <li><img src="../img/sticker-tick.webp" alt="" width="97" height="96">Tick</li>
+      <li><img src="../img/sticker-notepad.webp" alt="" width="87" height="96">Notepad</li>
+    </ul>
+    <ul>
+      <li>Drag a sticker onto the icon and it snaps into the nearer of its two corners. Drag it off to take it away. Tapping a sticker below the icon also puts it on or takes it off.</li>
+      <li>The tildes and the name go on one diagonal, top left and bottom right. The calendar page, tick and notepad go on the other, top right and bottom left.</li>
+      <li>Each corner takes one sticker or stays empty, each sticker goes on once, and only one of the two tildes at a time.</li>
+      <li>Save makes it your icon; Reset goes back to the standard one.</li>
+      <li>On the Mac, your icon shows in the Dock while lães runs. Finder and Launchpad keep the standard one, because macOS only lets a running app change its icon.</li>
+      <li>On iPhone, iOS confirms the change with an alert of its own.</li>
+    </ul>
+  </section>
+
+  <section id="ai" aria-labelledby="ai-title">
+    <h2 id="ai-title">Connect an AI tool <span class="tag">Mac</span></h2>
+    <p>lães can run an MCP server so an AI assistant on your Mac, such as Claude Code, can read your calendar, tasks and notes, add and change tasks and notes, and block time. It is off until you turn it on.</p>
+    <ol>
+      <li>Open Settings › AI Access and click <em>Turn On and Copy Setup Prompt</em>.</li>
+      <li>Paste the prompt into your AI tool. It adds the server to its own configuration and checks that it works.</li>
+    </ol>
+    <p>To set it up by hand, the Connect section shows the address and has buttons to copy the Claude Code command or the access token. For Claude Code, paste the command into a terminal. It looks like this, with your own token:</p>
+    <pre class="code" tabindex="0"><code>claude mcp add --transport http laes \
+  http://127.0.0.1:52637/mcp \
+  --header "Authorization: Bearer YOUR-TOKEN"</code></pre>
+    <ul>
+      <li>Other tools need the address and the token as an “Authorization: Bearer” header. Treat the token like a password. It is kept in your Mac's Keychain.</li>
+      <li>The server only runs while lães is open, and only this Mac can reach it.</li>
+      <li>The port is 52637 unless you change it. Random picks another if that one is taken; Default goes back. After changing the port, connect your tools again: the address they saved no longer works.</li>
+      <li>Items hidden with the eye button are hidden from the AI tool too, including the notes of private meetings.</li>
+      <li>The tools it offers: list_events, get_event, create_event, list_task_lists, list_tasks, get_task, create_task, update_task, list_notes, search_notes, get_note, create_note, update_note and sync.</li>
+    </ul>
+  </section>
+
+  <section id="sync" aria-labelledby="sync-title">
+    <h2 id="sync-title">Sync and offline</h2>
+    <ul>
+      <li>On the Mac, lães refreshes every five minutes and when you press Refresh (⌘R). Hover over Refresh to see when it last synced.</li>
+      <li>On iPhone, lães syncs when you open it and when you pull down a list. In between, iOS wakes it in the background a few times a day to send waiting changes and update the saved copy; iOS decides when.</li>
+      <li>Without a connection you see the last synced data, and the toolbar says Offline.</li>
+      <li>Task changes made offline are saved on the device and sent, in order, when the connection returns. The toolbar shows how many are waiting.</li>
+      <li>Some changes go straight to Microsoft and need a connection: blocking time, and changing or deleting a meeting made in lães; moving a task to another list; and adding, renaming or deleting lists.</li>
+    </ul>
+  </section>
+
+  <section id="troubleshooting" aria-labelledby="troubleshooting-title">
+    <h2 id="troubleshooting-title">Troubleshooting</h2>
+    <details>
+      <summary>Microsoft says “Need admin approval” when I sign in</summary>
+      <p>Your organisation requires its IT team to approve lães once. Send them the message shown on that screen. lães asks for these permissions:</p>
+      <ul>
+        <li><code>User.Read</code>, to sign you in</li>
+        <li><code>Calendars.ReadWrite</code>, for your calendar and the time you block</li>
+        <li><code>Tasks.ReadWrite</code>, for Microsoft To Do</li>
+        <li><code>MailboxSettings.Read</code>, for the colours of your Outlook categories</li>
+        <li><code>Files.ReadWrite.AppFolder</code>, for the notes, only in a OneDrive folder of lães' own</li>
+        <li><code>offline_access</code>, to stay signed in</li>
+      </ul>
+    </details>
+    <details>
+      <summary>I can't see my notes</summary>
+      <p>Notes may be switched off. Turn on <em>Keep notes in OneDrive</em> in Settings › General, or click <em>Turn On Notes</em> in the Notes view. Microsoft then asks you to allow the folder. If your account has no OneDrive, or your organisation doesn't allow it, notes stay off.</p>
+      <p>A note written by an AI tool or on another device appears after the next refresh.</p>
+    </details>
+    <details>
+      <summary>My AI tool can't connect</summary>
+      <ul>
+        <li>lães has to be open on the Mac, with <em>Let AI tools on this Mac connect</em> switched on in Settings › AI Access.</li>
+        <li>If AI Access shows an error, another app may be using the port. Click Random, then connect your tool again, since its saved address has changed.</li>
+        <li>Copy the setup prompt or the command again, so the address and token are current.</li>
+      </ul>
+    </details>
+    <details>
+      <summary>Something I changed isn't in Outlook or To Do yet</summary>
+      <p>If the toolbar says Offline, your task changes are waiting and go out, in order, when the connection returns. Otherwise press Refresh (⌘R), or pull down on iPhone. Moving a task between lists and changes to lists and blocked time need a connection; if one fails, lães says so in a bar at the top.</p>
+    </details>
+    <details>
+      <summary>My lists are in a different order on my other device</summary>
+      <p>Microsoft To Do can't sync the order of lists, so each device keeps its own.</p>
+    </details>
+    <details>
+      <summary>My custom icon isn't in Finder or Launchpad</summary>
+      <p>macOS only lets a running app change its icon, so your design shows in the Dock while lães runs, and Finder and Launchpad keep the standard icon.</p>
+    </details>
+  </section>
+
+  <section id="privacy" aria-labelledby="privacy-title">
+    <h2 id="privacy-title">Privacy and your data</h2>
+    <p>lães talks only to Microsoft, using your own sign-in. Notes, if you turn them on, are files in your own OneDrive. Your calendar, tasks and notes are kept on this device for offline use, and the sign-in is stored in your Keychain. Nothing is sent anywhere else, and signing out removes the local copy.</p>
+    <p>lães is built only with Apple's system frameworks and includes no third-party libraries. Icons are Apple's SF Symbols. There is no analytics or tracking in the app, and this website has no cookies, trackers or analytics either.</p>
+    <p>lães is an independent app and is not affiliated with or endorsed by Microsoft. Microsoft 365, Outlook and Microsoft To Do are trademarks of the Microsoft group of companies.</p>
+  </section>
+
+  <section id="getting-help" aria-labelledby="getting-help-title">
+    <h2 id="getting-help-title">Getting help</h2>
+    <ul>
+      <li>Found a bug, or have an idea? <a href="https://github.com/jkrenge/laes/issues/new/choose">Open an issue on GitHub</a>. Say which device you use, the version from Settings › About &amp; Legal, and what you expected to happen.</li>
+      <li>Found a security problem? Please don't open a public issue. Follow the <a href="https://github.com/jkrenge/laes/security/policy">security policy</a> instead.</li>
+    </ul>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <p><span class="tilde" aria-hidden="true">≈</span> lães, say “lanes” · <a href="./" aria-current="page">Help</a> · © 2026 Julian Krenge</p>
+  <p class="fine">lães is an independent app and is not affiliated with or endorsed by Microsoft. Microsoft 365, Outlook, Microsoft To Do and OneDrive are trademarks of the Microsoft group of companies.</p>
+</footer>
+
+</body>
+</html>
