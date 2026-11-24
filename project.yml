@@ -1,0 +1,64 @@
+name: Laes
+options:
+  bundleIdPrefix: app.laes
+  deploymentTarget:
+    macOS: "15.0"
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
+    SWIFT_APPROACHABLE_CONCURRENCY: YES
+    # A stable signature, so the Keychain recognises the app across rebuilds (ad-hoc signing re-prompts every build).
+    CODE_SIGN_IDENTITY: "Apple Development"
+    DEVELOPMENT_TEAM: W7QGTVUD84
+    CODE_SIGN_STYLE: Manual
+    GENERATE_INFOPLIST_FILE: YES
+    MARKETING_VERSION: "0.1"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  Laes:
+    type: application
+    platform: macOS
+    sources: [Laes]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.laes.Laes
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        INFOPLIST_KEY_CFBundleDisplayName: "lães"
+        INFOPLIST_KEY_CFBundleName: "lães"
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
+    scheme:
+      testTargets: [LaesTests]
+  LaesiOS:
+    type: application
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      # The Mac app's code minus its window shell; LaesiOS holds the touch screens.
+      - path: Laes
+        excludes: [LaesApp.swift, MCPServer.swift, Assets.xcassets, Views/ContentView.swift, Views/WelcomeView.swift]
+      - LaesiOS
+    info:
+      path: LaesiOS/Info.plist
+      properties:
+        UIBackgroundModes: [fetch]
+        BGTaskSchedulerPermittedIdentifiers: [app.laes.Laes.refresh]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.laes.Laes
+        CODE_SIGN_STYLE: Automatic
+        # The App Icon settings' other designs (AppIcon-*), drawn by Scripts/make-icon.swift.
+        ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        INFOPLIST_KEY_CFBundleDisplayName: "lães"
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
+  LaesTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources: [LaesTests]
+    dependencies:
+      - target: Laes
