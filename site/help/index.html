@@ -159,7 +159,8 @@
     <h2 id="notes-title">Notes</h2>
     <ul>
       <li>Notes are Markdown files in a OneDrive folder only lães uses. The first line, starting with #, is the title. Microsoft asks you to allow the folder once.</li>
-      <li>New Note starts an empty note with the cursor in the title. Edit Markdown shows the Markdown, Show Formatted shows it formatted.</li>
+      <li>New Note starts an empty note with the cursor in the title. On the Mac, double-click a note to edit it right where you clicked; Esc or Done stops. Formatting shows as you type: bold looks bold, with its <code>**</code> still there, dimmed.</li>
+      <li>On the Mac, Return continues a list (an empty item ends it), and <code>*</code>, <code>_</code>, <code>`</code> and <code>~</code> come in pairs. Select text, or hold ⌘ for a moment, to see the formatting buttons and their shortcuts: ⌘B bold, ⌘I italic, ⌘U underline, ⌘S strikethrough, ⌘L list, ⌘O numbered list, ⌘T to-do list, ⌘K link. A new link starts as <code>[label](url)</code>: type the label, press Tab, type the address.</li>
       <li>To write a note for a meeting, click the meeting and choose Add Note. Five minutes before it starts, lães reminds you of its notes.</li>
       <li>Search looks through the full text of every note. Notes written by an AI tool or on another device appear after the next refresh.</li>
       <li>Copy Note copies the whole note as Markdown. Delete removes the file from your OneDrive folder.</li>
@@ -188,6 +189,7 @@
     <ul>
       <li>In Settings › Private Group, switch on the calendar categories and task lists that are private.</li>
       <li>The eye button in the toolbar (⇧⌘P on the Mac) hides or shows all of them at once, for example before sharing your screen.</li>
+      <li>Hidden meetings stay on the calendar as plain grey blocks with a crossed-out eye, so you can still see the time is taken. Their title, place and people don't show. Hidden tasks and notes disappear completely.</li>
       <li>What the eye hides is hidden from connected AI tools too, including the notes of private meetings.</li>
     </ul>
   </section>
@@ -249,6 +251,7 @@
       <li>The port is 52637 unless you change it. Random picks another if that one is taken; Default goes back. After changing the port, connect your tools again: the address they saved no longer works.</li>
       <li>Items hidden with the eye button are hidden from the AI tool too, including the notes of private meetings.</li>
       <li>The tools it offers: list_events, get_event, create_event, list_task_lists, list_tasks, get_task, create_task, update_task, list_notes, search_notes, get_note, create_note, update_note and sync.</li>
+      <li>For example, ask it to prepare you for a meeting: it finds the meeting by words from its title, place or people, writes a note linked to it, and five minutes before the meeting lães shows you that note.</li>
     </ul>
   </section>
 
@@ -316,15 +319,25 @@
     <ul>
       <li>Found a bug, or have an idea? <a href="https://github.com/jkrenge/laes/issues/new/choose">Open an issue on GitHub</a>. Say which device you use, the version from Settings › About &amp; Legal, and what you expected to happen.</li>
       <li>Found a security problem? Please don't open a public issue. Follow the <a href="https://github.com/jkrenge/laes/security/policy">security policy</a> instead.</li>
+      <li>Anything else? Write to <a data-mail>inbox at laesapp.com</a>.</li>
     </ul>
   </section>
 
 </main>
 
 <footer class="footer">
-  <p><span class="tilde" aria-hidden="true">≈</span> lães, say “lanes” · <a href="./" aria-current="page">Help</a> · © 2026 Julian Krenge</p>
+  <p><span class="tilde" aria-hidden="true">≈</span> lães, say “lanes” · <a href="./" aria-current="page">Help</a> · <a href="#getting-help">Contact</a> · © 2026 Julian Krenge</p>
   <p class="fine">lães is an independent app and is not affiliated with or endorsed by Microsoft. Microsoft 365, Outlook, Microsoft To Do and OneDrive are trademarks of the Microsoft group of companies.</p>
 </footer>
+
+<script>
+  // The address is put together here rather than written in the page, so bots that harvest addresses from HTML don't find it.
+  for (const link of document.querySelectorAll("a[data-mail]")) {
+    const address = ["inbox", "laesapp.com"].join("@");
+    link.href = "mailto:" + address;
+    link.textContent = address;
+  }
+</script>
 
 </body>
 </html>
