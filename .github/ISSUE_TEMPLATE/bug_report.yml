@@ -1,0 +1,43 @@
+name: Bug report
+description: Something in lães doesn't work as it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Before attaching screenshots, check them for meetings, tasks or notes you don't want to share. Security problems go through the [private report](https://github.com/jkrenge/laes/security/advisories/new) instead.
+  - type: dropdown
+    id: app
+    attributes:
+      label: Which app?
+      options: [Mac, iPhone, iPad, More than one]
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: In Settings › About & Legal, and your macOS or iOS version.
+      placeholder: lães 0.1, macOS 26.2
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open Tasks
+        2. Drag a task onto Tuesday
+        3. …
+  - type: dropdown
+    id: account
+    attributes:
+      label: Microsoft account
+      options: [Work or school, Personal, Not signed in (sample data)]

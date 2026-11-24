@@ -1,0 +1,20 @@
+name: Idea
+description: Suggest something lães could do better.
+labels: [idea]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The situation and what gets in your way. That helps more than a feature name.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would help?
+  - type: dropdown
+    id: app
+    attributes:
+      label: Which app?
+      options: [Mac, iPhone, Both]
