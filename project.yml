@@ -45,6 +45,7 @@ targets:
         CFBundleDisplayName: lães
         UIBackgroundModes: [fetch]
         BGTaskSchedulerPermittedIdentifiers: [app.laes.Laes.refresh]
+        ITSAppUsesNonExemptEncryption: false   # only Apple's HTTPS, so uploads skip the export-compliance question
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.laes.Laes
