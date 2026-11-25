@@ -66,25 +66,108 @@ struct NoteEditor: View {
     @State private var confirmDelete = false
     @State private var copied = false
     @FocusState private var isFocused: Bool
+    #if os(macOS)
+    @State private var editor = MarkdownEditorModel()
+    #endif
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 14) {
+        #if os(macOS)
+        mac
+        #else
+        phone
+        #endif
+    }
+
+    #if os(macOS)
+    /// One styled editor for reading and writing; the buttons float over its top, and the text scrolls under them.
+    private var mac: some View {
+        MarkdownEditor(text: $draft, isEditing: $isEditing, model: editor)
+            .overlay(alignment: .topLeading) {
                 if let event = note.meta("event_title") {
                     Label([event, note.eventStart?.formatted(date: .abbreviated, time: .shortened)].compactMap(\.self).joined(separator: " · "),
                           systemImage: "calendar")
                         .font(.callout)
                         .foregroundStyle(Color.brandText)
                         .lineLimit(1)
+                        .padding(.horizontal, 12)
+                        .frame(height: 32)
+                        .glassCapsule()
+                        .padding(12)
+                        .padding(.trailing, 200)   // clear of the buttons
                 }
-                #if os(macOS)
-                Spacer(minLength: 0)
-                controls
-                #endif
             }
-            #if os(macOS)
-            Divider()
-            #endif
+            .overlay(alignment: .topTrailing) {
+                HStack(spacing: 14) { controls }
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.borderless)
+                    .font(.system(size: 14))
+                    .padding(.horizontal, 14)
+                    .frame(height: 34)
+                    .glassCapsule()
+                    .padding(12)
+            }
+            .overlay { GeometryReader { geo in pill(in: geo.size) } }
+            .onAppear {
+                draft = note.body
+                if note.isBlank { isEditing = true }   // a new note: type the title right away
+            }
+            .onDisappear { save() }
+            .onChange(of: isEditing) { _, editing in if !editing { finish() } }
+            .onChange(of: note.text) {
+                if !isEditing { draft = note.body }   // changed elsewhere, for example by an AI tool
+            }
+            .alert("Delete “\(note.title)”?", isPresented: $confirmDelete) {
+                Button("Delete", role: .destructive) { Task { await store.deleteNote(note) } }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("The file is removed from your OneDrive folder.")
+            }
+    }
+
+    /// Over the selection while text is selected or ⌘ is held: each style, with its shortcut.
+    @ViewBuilder private func pill(in size: CGSize) -> some View {
+        if isEditing, editor.showsPill, let anchor = editor.anchor {
+            let width: CGFloat = 330, half = width / 2
+            let x = min(max(anchor.midX, half + 8), max(size.width - half - 8, half + 8))
+            let y = anchor.minY > 60 ? anchor.minY - 26 : anchor.maxY + 26
+            HStack(spacing: 0) {
+                ForEach(NoteFormat.allCases) { format in
+                    Button { editor.apply(format) } label: {
+                        VStack(spacing: 0) {
+                            Image(systemName: format.icon).font(.system(size: 13, weight: .medium)).frame(width: 32, height: 22)
+                            if editor.commandHeld {
+                                Text("⌘" + String(format.key).uppercased()).font(.system(size: 9, weight: .medium)).foregroundStyle(Color.subtle)
+                            }
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .focusable(false)
+                    .help("\(format.title) (⌘\(String(format.key).uppercased()))")
+                    .accessibilityLabel(format.title)
+                    if format == .strikethrough || format == .taskList { Divider().frame(height: 18).padding(.horizontal, 3) }
+                }
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .glassCapsule()
+            .fixedSize()
+            .position(x: x, y: y)
+            .transition(.opacity)
+        }
+    }
+    #endif
+
+    #if os(iOS)
+    private var phone: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if let event = note.meta("event_title") {
+                Label([event, note.eventStart?.formatted(date: .abbreviated, time: .shortened)].compactMap(\.self).joined(separator: " · "),
+                      systemImage: "calendar")
+                    .font(.callout)
+                    .foregroundStyle(Color.brandText)
+                    .lineLimit(1)
+            }
             if isEditing {
                 TextEditor(text: $draft, selection: $selection)
                     .focused($isFocused)
@@ -97,14 +180,11 @@ struct NoteEditor: View {
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                #if os(iOS)
                 .contentMargins(.bottom, 80, for: .scrollContent)   // room to scroll the end above the edit button
-                #endif
             }
         }
         .padding(20)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        #if os(iOS)
         .overlay(alignment: .bottom) {
             VStack(spacing: 10) {
                 if copied {
@@ -134,7 +214,6 @@ struct NoteEditor: View {
         .safeAreaInset(edge: .bottom) {
             if isEditing, isFocused || menu != nil { formatBar }   // only while the keyboard is up
         }
-        #endif
         .onAppear {
             draft = note.body
             if note.isBlank { edit() }   // a new note: type the title right away
@@ -153,18 +232,17 @@ struct NoteEditor: View {
             Text("The file is removed from your OneDrive folder.")
         }
     }
+    #endif
 
-    /// Switch between the Markdown source and the formatted note, copy it, delete it.
+    /// Edit or finish, copy the note, delete it.
     @ViewBuilder private var controls: some View {
         if note.isDirty, !note.isBlank {
             Image(systemName: "arrow.up.circle").foregroundStyle(Color.subtle)
                 .help("Not yet saved to OneDrive").accessibilityLabel("Not yet saved to OneDrive")
         }
         #if os(macOS)   // on iPhone: the floating edit button, and hiding the keyboard finishes
-        Button(isEditing ? "Show Formatted" : "Edit Markdown", systemImage: isEditing ? "eye" : "pencil") {
-            if isEditing { finish() } else { edit() }
-        }
-        .help(isEditing ? "Show the note formatted" : "Edit the Markdown")
+        Button(isEditing ? "Done" : "Edit", systemImage: isEditing ? "checkmark" : "pencil") { isEditing.toggle() }
+            .help(isEditing ? "Done editing (Esc)" : "Edit the note, or double-click it")
         #endif
         Button(copied ? "Copied" : "Copy Note", systemImage: copied ? "checkmark" : "doc.on.doc") {
             #if os(macOS)

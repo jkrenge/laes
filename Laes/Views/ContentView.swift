@@ -87,7 +87,11 @@ struct ContentView: View {
             .help("Switch between the weeks, all tasks and notes (⌘L)")
         }
         ToolbarItem(placement: .navigation) {
-            Button("Next View") { mode = mode == .weeks ? .tasks : mode == .tasks ? .notes : .weeks }
+            Button("Next View") {
+                // While a note is being edited, ⌘L makes a list there instead.
+                if let editor = NSApp.keyWindow?.firstResponder as? MarkdownTextView, editor.isEditable { return editor.apply(.bulletList) }
+                mode = mode == .weeks ? .tasks : mode == .tasks ? .notes : .weeks
+            }
                 .keyboardShortcut("l")
                 .frame(width: 0, height: 0)
                 .opacity(0)

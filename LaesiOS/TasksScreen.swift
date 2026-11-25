@@ -63,6 +63,7 @@ struct TaskListScreen: View {
     @AppStorage("plannedFilter") private var planned = PlannedFilter.dueNow   // the last one used
     @State private var draft = ""
     @State private var ignored: Set<String> = []   // words in the draft the user said aren't a date or a star
+    @State private var typing = false   // the add bar has the keyboard
     @State private var selected: TodoTask?
     @State private var added: [String] = []   // tasks added on this screen, shown last
     @AppStorage("taskSort") private var sort = TaskSort.list
@@ -140,13 +141,32 @@ struct TaskListScreen: View {
         let quick = QuickAdd(draft, now: .now, ignoring: ignored)
         return HStack(spacing: 10) {
             Image(systemName: "plus").fontWeight(.semibold).foregroundStyle(Color.brandText)
-            EntryField(prompt: source == .planned ? planned.addPrompt : "Add a task", text: $draft) { add(today: today) }
+            EntryField(prompt: source == .planned ? planned.addPrompt : "Add a task", text: $draft, isEditing: $typing) { add(today: today) }
                 .overlay(alignment: .leading) { QuickAddUnderline(quick: quick, text: draft) }
         }
         .padding(.horizontal, 18)
         .frame(height: 48)
         .glassCapsule()
-        .overlay(alignment: .topLeading) { QuickAddBadges(quick: quick, draft: draft, ignored: $ignored) }
+        .overlay(alignment: .top) {
+            // Badges for the words read, and a way out of the keyboard: Return keeps it up for the next task.
+            HStack(alignment: .bottom, spacing: 8) {
+                QuickAddBadges(quick: quick, draft: draft, ignored: $ignored)
+                Spacer(minLength: 0)
+                if typing {
+                    Button("Hide Keyboard", systemImage: "keyboard.chevron.compact.down") {
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    }
+                    .labelStyle(.iconOnly)
+                    .font(.body.weight(.medium))
+                    .foregroundStyle(Color.primary)
+                    .frame(width: 44, height: 44)
+                    .glassCapsule()
+                    .transition(.scale(scale: 0.6).combined(with: .opacity))
+                }
+            }
+            .alignmentGuide(.top) { $0[.bottom] + 8 }   // above the bar without moving the list
+            .animation(.snappy, value: typing)
+        }
         .padding(.horizontal, 16)
         .padding(.bottom, 8)
     }

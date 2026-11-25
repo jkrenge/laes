@@ -60,3 +60,22 @@ import Foundation
     #expect(design.stickers[.bottomRight] == .whiteTilde && design.stickers[.topLeft] == nil)
     #expect(IconDesign(code: "ynl") == nil)   // a design saved before corners
 }
+
+@Test func aRedactedMeetingKeepsOnlyItsTime() {
+    let start = Date(timeIntervalSinceReferenceDate: 800_000_000)
+    var event = CalendarEvent(id: "e", title: "Doctor", start: start, end: start + 3600, location: "Clinic",
+                              categories: ["Private"], response: .accepted, isPrivate: true, isOnlineMeeting: true,
+                              webLink: URL(string: "https://outlook.office.com/e"), attendees: ["Dr. A"], joinURL: URL(string: "https://teams.microsoft.com/j"))
+    event = event.redacted
+    #expect(event.isRedacted && event.start == start && event.end == start + 3600 && event.response == .accepted)
+    #expect(event.title.isEmpty && event.location == nil && event.categories.isEmpty && event.attendees.isEmpty)
+    #expect(event.webLink == nil && event.joinURL == nil && !event.isOnlineMeeting && !event.isOwn)
+}
+
+@Test func meetingSearchMatchesTitlePlaceAndPeople() {
+    let start = Date(timeIntervalSinceReferenceDate: 800_000_000)
+    let event = CalendarEvent(id: "e", title: "1:1 Julian / Peter", start: start, end: start + 1800, location: "Café Müller",
+                              attendees: ["Peter Schmidt", "Ana Lópes"])
+    #expect(event.matches("") && event.matches("peter 1:1") && event.matches("cafe muller") && event.matches("ana lopes"))
+    #expect(!event.matches("peter budget"))
+}

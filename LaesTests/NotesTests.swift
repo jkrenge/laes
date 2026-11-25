@@ -42,6 +42,18 @@ import Testing
     #expect(run(.indent, "a\nb", 2..<2) == "a\n  |b")
     #expect(run(.dedent, "a\n   b", 5..<5) == "a\n |b")
     #expect(run(.dedent, "a", 0..<0) == "|a")
+    #expect(run(.list("1. "), "a\n- b\nc", 0..<7) == "1. a\n2. b\n3. c|")
+    #expect(run(.list(""), "- [ ] a\n12. b", 0..<13) == "a\nb|")
+}
+
+@Test func returnContinuesALineOfAList() {
+    #expect(MarkdownAction.continuation(after: "- milk") == .next("- "))
+    #expect(MarkdownAction.continuation(after: "  * eggs") == .next("  * "))
+    #expect(MarkdownAction.continuation(after: "9. nine") == .next("10. "))
+    #expect(MarkdownAction.continuation(after: "- [x] done") == .next("- [ ] "))
+    #expect(MarkdownAction.continuation(after: "  - ") == .end(markerLength: 4))
+    #expect(MarkdownAction.continuation(after: "Plain text") == nil)
+    #expect(MarkdownAction.continuation(after: "2026 was") == nil)
 }
 
 @Test func noteSearchRanksByRelevanceAndMatchesWordStarts() {
@@ -60,4 +72,21 @@ import Testing
     #expect(noteFileName(for: "Q1: plan / draft?", taken: []) == "Q1  plan   draft.md")
     #expect(noteFileName(for: "Plan", taken: ["plan.md", "Plan 2.md"]) == "Plan 3.md")
     #expect(noteFileName(for: " . ", taken: []) == "Note.md")
+}
+
+@Test func remindersComeFromTheNotesEvenForMeetingsNotOnScreen() {
+    let later = Date.now.addingTimeInterval(30 * 86_400)   // weeks past what the calendar has loaded
+    var far = Note(name: "far.md", text: "# Prep\n\nAgenda")
+    far.link(to: CalendarEvent(id: "far", title: "Board meeting", start: later, end: later + 3600))
+    var moved = Note(name: "moved.md", text: "# Sync")
+    moved.link(to: CalendarEvent(id: "moved", title: "Old title", start: later, end: later + 3600))
+    var dropped = Note(name: "dropped.md", text: "# Gone")
+    dropped.link(to: CalendarEvent(id: "dropped", title: "Cancelled", start: later, end: later + 3600))
+    let loaded = [CalendarEvent(id: "moved", title: "New title", start: later + 7200, end: later + 9000),
+                  CalendarEvent(id: "dropped", title: "Cancelled", start: later, end: later + 3600, isCancelled: true)]
+    let meetings = NoteReminders.meetings(for: [far, moved, dropped, Note(name: "loose.md", text: "# No meeting")], loaded: loaded)
+        .sorted { $0.event.id < $1.event.id }
+    #expect(meetings.map(\.event.id) == ["far", "moved"])
+    #expect(meetings[0].event.title == "Board meeting" && meetings[0].event.start.timeIntervalSince(later) < 1)
+    #expect(meetings[1].event.title == "New title" && meetings[1].event.start == later + 7200)
 }

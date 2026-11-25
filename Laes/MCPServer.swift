@@ -1,5 +1,6 @@
 import Foundation
 import Network
+import UserNotifications
 
 /// A parsed HTTP/1.1 request; nil while the bytes received so far are incomplete.
 struct HTTPRequest {
@@ -117,7 +118,7 @@ final class MCPServer {
                 "protocolVersion": ["2025-06-18", "2025-03-26", "2024-11-05"].contains(asked) ? asked : "2025-06-18",
                 "capabilities": ["tools": [String: Any]()],
                 "serverInfo": ["name": "laes", "version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"],
-                "instructions": "The user's Microsoft 365 calendar, Microsoft To Do tasks and Markdown notes, through the lães app. Days are YYYY-MM-DD in the user's time zone. Notes can be linked to one calendar event (event_id from list_events); the user is reminded of linked notes five minutes before that event. Use search_notes before answering from memory, and create a linked note to prepare the user for a meeting.",
+                "instructions": "The user's Microsoft 365 calendar, Microsoft To Do tasks and Markdown notes, through the lães app. Days are YYYY-MM-DD in the user's time zone. Find a meeting with list_events and a query (words from its title, place or attendees). Notes can be linked to one calendar event (event_id from list_events); the user is reminded of linked notes five minutes before that event. Use search_notes before answering from memory, and create a linked note to prepare the user for a meeting.",
             ]
         case "ping":
             result = [:]
@@ -148,8 +149,10 @@ final class MCPServer {
 
     static let tools: [[String: Any]] = [
         tool("sync", "Send any unsent changes to Microsoft and reload the calendar and tasks. Use before reading if freshness matters."),
-        tool("list_events", "Calendar events between two days. Items the user has hidden as private are left out.",
-             ["start": "First day, YYYY-MM-DD. Default: today.", "end": "Day after the last day, YYYY-MM-DD. Default: 14 days after start."]),
+        tool("list_events", "Calendar events between two days, or only those matching a search. Items the user has hidden as private are left out.",
+             ["start": "First day, YYYY-MM-DD. Default: today.",
+              "end": "Day after the last day, YYYY-MM-DD. Default: 14 days after start, or 8 weeks when searching.",
+              "query": "Words to find in the title, place or attendees, like \"Peter 1:1\". Every word must match; case and accents don't matter."]),
         tool("get_event", "One calendar event with its description and organizer. Ids come from list_events.", ["id": "Event id"], required: ["id"]),
         tool("create_event", "Block time in the user's calendar: a private, busy meeting in the lães category.",
              ["title": "Title", "start": "Start, ISO 8601 with offset (2026-11-23T14:00:00+01:00) or local time (2026-11-23T14:00)", "minutes": "(integer) Length in minutes. Default 60."],
@@ -258,11 +261,13 @@ final class MCPServer {
                     "lastSync": store.lastSync.map(Self.time) ?? NSNull(), "error": store.errorMessage ?? NSNull()]
 
         case "list_events":
+            let query = (args["query"] as? String ?? "").trimmingCharacters(in: .whitespaces)
             let start = try day("start") ?? Calendar.laes.startOfDay(for: .now)
-            let end = try day("end") ?? Calendar.laes.date(byAdding: .day, value: 14, to: start)!
+            let end = try day("end") ?? Calendar.laes.date(byAdding: .day, value: query.isEmpty ? 14 : 56, to: start)!
             let events = try await GraphClient(auth: store.auth).events(from: start, to: end)
             return events
                 .filter { store.showPrivate || !hasCategory($0.categories, in: store.privateCategories) }
+                .filter { $0.matches(query) }
                 .sorted { $0.start < $1.start }
                 .map { event in
                     var json = Self.json(event)
@@ -362,6 +367,67 @@ final class MCPServer {
         local.dateFormat = text.count > 16 ? "yyyy-MM-dd'T'HH:mm:ss" : "yyyy-MM-dd'T'HH:mm"
         return local.date(from: text)
     }
+
+    #if DEBUG
+    /// `-mcpCheck`: plays an AI tool through the server's own HTTP door, with its token: finds the next meeting, writes
+    /// a note for it, reads it back, checks its reminder is scheduled, then deletes the note. The outcome (no meeting
+    /// titles or note text) goes to ~/Library/Logs/laes-mcp-check.txt.
+    static func check(_ store: AppStore) async {
+        var log: [String] = []
+        func call(_ method: String, _ params: [String: Any] = [:]) async throws -> [String: Any] {
+            var request = URLRequest(url: URL(string: url)!)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            request.httpBody = try JSONSerialization.data(withJSONObject: ["jsonrpc": "2.0", "id": 1, "method": method, "params": params])
+            let (data, response) = try await URLSession.shared.data(for: request)
+            log.append("\(method)\(params["name"].map { " \($0)" } ?? ""): HTTP \((response as? HTTPURLResponse)?.statusCode ?? 0)")
+            return (try JSONSerialization.jsonObject(with: data) as? [String: Any])?["result"] as? [String: Any] ?? [:]
+        }
+        func tool(_ name: String, _ arguments: [String: Any]) async throws -> Any {
+            let result = try await call("tools/call", ["name": name, "arguments": arguments])
+            let text = ((result["content"] as? [[String: Any]])?.first?["text"] as? String) ?? ""
+            if result["isError"] as? Bool == true { log.append("  error: \(text)"); throw GraphError(text) }
+            return try JSONSerialization.jsonObject(with: Data(text.utf8))
+        }
+        do {
+            let server = try await call("initialize", ["protocolVersion": "2025-06-18"])
+            log.append("  server: \((server["serverInfo"] as? [String: Any])?["name"] ?? "?")")
+            log.append("  tools: \(((try await call("tools/list"))["tools"] as? [Any])?.count ?? 0)")
+            let events = try await tool("list_events", [:]) as? [[String: Any]] ?? []
+            log.append("  meetings in the next two weeks: \(events.count)")
+            guard let meeting = events.first(where: {
+                ($0["allDay"] as? Bool) == false && ($0["cancelled"] as? Bool) == false
+                    && (($0["start"] as? String).flatMap(parseTime) ?? .distantPast) > .now.addingTimeInterval(15 * 60)
+            }), let id = meeting["id"] as? String else { throw GraphError("No upcoming meeting to try it on.") }
+            log.append("  picked the meeting starting \(meeting["start"] ?? "?")")
+            let words: [Substring] = (meeting["title"] as? String ?? "").split(whereSeparator: \.isWhitespace)
+            let word = words.max { $0.count < $1.count }.map(String.init) ?? ""
+            let found = try await tool("list_events", ["query": word]) as? [[String: Any]] ?? []
+            log.append("  searching a word of its title finds it: \(found.contains { $0["id"] as? String == id }) (\(found.count) of the next 8 weeks' meetings match)")
+            let note = try await tool("create_note", ["title": "lães check", "body": "Written through the AI connection to test reminders. Safe to delete.", "event_id": id]) as? [String: Any] ?? [:]
+            let name = note["name"] as? String ?? ""
+            log.append("  note created, saved to OneDrive: \(note["savedToOneDrive"] ?? "?"), linked: \((note["event_id"] as? String) == id)")
+            let linked = try await tool("list_notes", ["event_id": id]) as? [[String: Any]] ?? []
+            log.append("  list_notes for the meeting finds it: \(linked.contains { $0["name"] as? String == name })")
+            try await Task.sleep(for: .seconds(3))   // reminders are scheduled on their own task
+            let center = UNUserNotificationCenter.current()
+            let permission = await center.notificationSettings().authorizationStatus
+            let pending = await center.pendingNotificationRequests()
+            log.append("  notifications allowed: \(permission == .authorized) (status \(permission.rawValue)), reminder scheduled: \(pending.contains { $0.identifier == id })")
+            if let reminder = pending.first(where: { $0.identifier == id }),
+               let date = (reminder.trigger as? UNCalendarNotificationTrigger)?.nextTriggerDate() {
+                log.append("  reminder at \(date.formatted(.iso8601)), \(Int(((meeting["start"] as? String).flatMap(parseTime) ?? date).timeIntervalSince(date) / 60)) min before the start")
+            }
+            if let made = store.notes.first(where: { $0.name == name }) { await store.deleteNote(made) }
+            log.append("  test note deleted: \(!store.notes.contains { $0.name == name })")
+        } catch {
+            log.append("FAILED: \(error.localizedDescription)")
+        }
+        let file = URL.libraryDirectory.appending(path: "Logs/laes-mcp-check.txt")
+        try? log.joined(separator: "\n").write(to: file, atomically: true, encoding: .utf8)
+    }
+    #endif
 
     private static func json(_ event: CalendarEvent) -> [String: Any] {
         var json: [String: Any] = [

@@ -101,13 +101,14 @@ struct HelpView: View {
         ]),
         ("note.text", "Notes", [
             "Notes are Markdown files in a OneDrive folder only lães uses. The first line, starting with #, is the title.",
-            "New Note starts an empty note with the cursor in the title. Edit Markdown shows the Markdown, Show Formatted shows it formatted.",
+            "New Note starts an empty note with the cursor in the title. Double-click a note to edit it where you clicked; Esc or Done stops. Formatting shows as you type, with its Markdown dimmed.",
+            "Return continues a list. ⌘B, ⌘I, ⌘U and ⌘S style the selection; ⌘L, ⌘O and ⌘T make a list, a numbered list or a to-do list; ⌘K adds a link, and Tab moves from its label to its address. Select text or hold ⌘ to see them all.",
             "To write a note for a meeting, click the meeting and choose Add Note. Five minutes before it starts, lães reminds you of its notes.",
             "Search looks through the full text of every note. Notes written by an AI tool or on another device appear after the next refresh.",
         ]),
         ("eye.slash", "Private items", [
             "In Settings (⌘,), switch on the calendar categories and task lists that are private.",
-            "The eye button in the toolbar (⇧⌘P) hides or shows all of them at once, for example before sharing your screen.",
+            "The eye button in the toolbar (⇧⌘P) hides or shows all of them at once, for example before sharing your screen. Hidden meetings stay as plain blocks of time, without their title; hidden tasks and notes disappear.",
         ]),
         ("arrow.clockwise", "Syncing and working offline", [
             "lães refreshes every five minutes and when you press Refresh (⌘R). Hover over Refresh to see when it last synced.",

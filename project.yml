@@ -41,6 +41,8 @@ targets:
     info:
       path: LaesiOS/Info.plist
       properties:
+        CFBundleName: lães   # iOS prompts (sign-in, notifications) show this one, not the display name
+        CFBundleDisplayName: lães
         UIBackgroundModes: [fetch]
         BGTaskSchedulerPermittedIdentifiers: [app.laes.Laes.refresh]
     settings:

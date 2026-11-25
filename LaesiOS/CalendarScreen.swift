@@ -97,7 +97,7 @@ private struct DayCell: View {
         let cal = Calendar.laes
         let isToday = cal.isDate(day, inSameDayAs: now)
         let dayEnd = cal.date(byAdding: .day, value: 1, to: day)!
-        let allDay = store.visibleEvents.filter { isAllDayBar($0) && $0.start < dayEnd && $0.end > day }
+        let allDay = store.calendarEvents.filter { isAllDayBar($0) && $0.start < dayEnd && $0.end > day }
         VStack(spacing: 0) {
             HStack(spacing: 5) {
                 Text(day.formatted(.dateTime.weekday(.abbreviated))).foregroundStyle(isToday ? Color.primary : Color.subtle)

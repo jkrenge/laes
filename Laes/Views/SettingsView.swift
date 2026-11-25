@@ -1,4 +1,5 @@
 import SwiftUI
+import UserNotifications
 
 struct SettingsView: View {
     @Environment(AppStore.self) private var store
@@ -121,6 +122,11 @@ struct SettingsView: View {
         } footer: {
             note("Notes are Markdown files in a OneDrive folder only lães uses. Switch this off if your account has no OneDrive or your organisation doesn't allow it; signing in then no longer asks for it.")
         }
+        Section {
+            LabeledContent("Meeting reminders") { ReminderPermission() }
+        } footer: {
+            note("Five minutes before a meeting that has notes, lães shows them in a notification, including notes an AI tool wrote for it.")
+        }
         Section("Week") {
             @Bindable var store = store
             Picker("Week starts on", selection: $store.firstWeekday) {
@@ -137,7 +143,7 @@ struct SettingsView: View {
 
     @ViewBuilder private var privateGroup: some View {
         Section {
-            note("The private group is what you'd rather not have on screen, say when you share your screen or show someone your calendar: meetings in the calendar categories and tasks on the lists you pick below. The eye button hides or shows the whole group at once; nothing changes in Microsoft 365.")
+            note("The private group is what you'd rather not have on screen, say when you share your screen or show someone your calendar: meetings in the calendar categories and tasks on the lists you pick below. The eye button hides or shows the whole group at once. Hidden meetings stay on the calendar as plain blocks, so you still see the time is taken; hidden tasks and notes disappear. Nothing changes in Microsoft 365.")
         }
         Section("Calendar categories") {
             ForEach(categories, id: \.self) { name in
@@ -255,4 +261,40 @@ struct SettingsView: View {
             set: { if $0 { store[keyPath: set].insert(value) } else { store[keyPath: set].remove(value) } }
         )
     }
+}
+
+/// Whether notifications are allowed, since reminders silently do nothing without them; a way to allow them if not.
+private struct ReminderPermission: View {
+    @State private var status: UNAuthorizationStatus?
+    @Environment(\.scenePhase) private var scenePhase
+
+    var body: some View {
+        Group {
+            switch status {
+            case .authorized, .provisional, .ephemeral: Text("On").foregroundStyle(Color.subtle)
+            case .notDetermined:
+                Button("Allow") {
+                    Task {
+                        _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])
+                        await refresh()
+                    }
+                }
+            case .denied:
+                Button("Turn On in Settings") { open(Self.settingsURL) }
+            default: ProgressView().controlSize(.small)
+            }
+        }
+        .task { await refresh() }
+        .onChange(of: scenePhase) { Task { await refresh() } }   // back from System Settings
+    }
+
+    private func refresh() async { status = await UNUserNotificationCenter.current().notificationSettings().authorizationStatus }
+
+    #if os(macOS)
+    private static let settingsURL = URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension?id=app.laes.Laes")!
+    private func open(_ url: URL) { NSWorkspace.shared.open(url) }
+    #else
+    private static let settingsURL = URL(string: UIApplication.openNotificationSettingsURLString)!
+    private func open(_ url: URL) { UIApplication.shared.open(url) }
+    #endif
 }

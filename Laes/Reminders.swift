@@ -12,6 +12,20 @@ final class NoteReminders: NSObject, UNUserNotificationCenterDelegate {
         UNUserNotificationCenter.current().delegate = self
     }
 
+    /// The meetings that have notes, taken from the notes themselves: each knows its meeting's id, title and start, so
+    /// meetings outside the weeks on screen get their reminder too (one an AI tool wrote notes for, say). A loaded
+    /// meeting's current time and title win, in case it moved; one that was cancelled or declined gets none.
+    static func meetings(for notes: [Note], loaded events: [CalendarEvent]) -> [(event: CalendarEvent, notes: [Note])] {
+        Dictionary(grouping: notes.filter { $0.eventID != nil }, by: { $0.eventID! }).compactMap { id, notes in
+            if let event = events.first(where: { $0.id == id }) {
+                return event.isCancelled || event.response == .declined ? nil : (event, notes)
+            }
+            guard let start = notes.compactMap(\.eventStart).first else { return nil }
+            let title = notes.compactMap { $0.meta("event_title") }.first ?? "Meeting"
+            return (CalendarEvent(id: id, title: title, start: start, end: start), notes)
+        }
+    }
+
     /// Replaces all scheduled reminders. Asks for permission the first time there is something to remind of.
     func schedule(_ meetings: [(event: CalendarEvent, notes: [Note])]) async {
         let center = UNUserNotificationCenter.current()

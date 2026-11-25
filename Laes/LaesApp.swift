@@ -28,6 +28,11 @@ struct LaesApp: App {
                 }
                 #if DEBUG
                 .task { await Self.shootIfAsked(store) }
+                .task {
+                    guard ProcessInfo.processInfo.arguments.contains("-mcpCheck") else { return }
+                    try? await Task.sleep(for: .seconds(6))   // signed in, cache loaded, server listening
+                    await MCPServer.check(store)
+                }
                 #endif
                 .task {
                     #if DEBUG

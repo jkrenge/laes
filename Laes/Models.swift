@@ -27,9 +27,28 @@ struct CalendarEvent: Identifiable, Hashable, Codable, Sendable {
     var webLink: URL?
     var attendees: [String] = []
     var joinURL: URL?
+    var isRedacted = false   // a private meeting's stand-in while the private group is hidden; never saved
+
+    private enum CodingKeys: String, CodingKey {
+        case id, title, start, end, isAllDay, location, categories, showAs, response, isPrivate, isRecurring,
+             isOnlineMeeting, isCancelled, webLink, attendees, joinURL
+    }
 
     /// Created here (carries the lães category): the only meetings that can be resized or deleted here.
     var isOwn: Bool { categories.contains(ownCategory) }
+
+    /// Every word of `query` is in the title, place or attendees, ignoring case and accents. An empty query matches all.
+    func matches(_ query: String) -> Bool {
+        let haystack = ([title, location ?? ""] + attendees).joined(separator: " ")
+        return query.split(whereSeparator: \.isWhitespace).allSatisfy { haystack.localizedStandardContains($0) }
+    }
+
+    /// Only the time it takes, whether it is free and whether it still stands: the calendar shows a private meeting
+    /// like this while the private group is hidden, so the time reads as taken without saying what for.
+    var redacted: CalendarEvent {
+        CalendarEvent(id: id, title: "", start: start, end: end, isAllDay: isAllDay, showAs: showAs, response: response,
+                      isCancelled: isCancelled, isRedacted: true)
+    }
 }
 
 /// Outlook category put on meetings created in lães.

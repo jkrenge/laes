@@ -168,6 +168,19 @@ extension AppStore {
     }
 }
 
+#if os(macOS)
+extension View {
+    /// Floating glass, as on iPhone; frosted before macOS 26.
+    @ViewBuilder func glassCapsule() -> some View {
+        if #available(macOS 26, *) {
+            glassEffect(.regular, in: Capsule())
+        } else {
+            background(.regularMaterial, in: Capsule())
+        }
+    }
+}
+#endif
+
 #if os(iOS)
 /// A one-line field whose Return acts and keeps the keyboard up, for adding one item after another.
 /// SwiftUI's fields always end editing on Return; focusing them again made the keyboard drop and come back.
@@ -176,6 +189,7 @@ struct EntryField: UIViewRepresentable {
     let prompt: String
     @Binding var text: String
     var style: UIFont.TextStyle = .body
+    var isEditing: Binding<Bool>?   // follows whether the field has the keyboard
     let onReturn: () -> Void
 
     func makeUIView(context: Context) -> UITextField {
@@ -209,6 +223,9 @@ struct EntryField: UIViewRepresentable {
         init(parent: EntryField) { self.parent = parent }
 
         @objc func changed(_ field: UITextField) { parent.text = field.text ?? "" }
+
+        func textFieldDidBeginEditing(_ field: UITextField) { parent.isEditing?.wrappedValue = true }
+        func textFieldDidEndEditing(_ field: UITextField) { parent.isEditing?.wrappedValue = false }
 
         func textFieldShouldReturn(_ field: UITextField) -> Bool {
             if parent.text.trimmingCharacters(in: .whitespaces).isEmpty { field.resignFirstResponder() } else { parent.onReturn() }

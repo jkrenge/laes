@@ -11,6 +11,29 @@ struct EventBlock: View {
     private var shape: RoundedRectangle { RoundedRectangle(cornerRadius: 4, style: .continuous) }
 
     var body: some View {
+        if event.isRedacted { hidden } else { meeting }
+    }
+
+    /// A private meeting while the private group is hidden: the time is taken, and nothing says what for.
+    private var hidden: some View {
+        HStack(spacing: 0) {
+            if size.height >= 10 {
+                Image(systemName: "eye.slash").font(.system(size: 10, weight: .semibold)).padding(.leading, 6)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.top, size.height >= 18 ? 3 : 0)
+        .frame(width: max(size.width, 0), height: size.height, alignment: .topLeading)
+        .foregroundStyle(Color.subtle)
+        .background(event.showAs == .free ? Color.clear : Color.primary.opacity(0.2), in: shape)
+        .overlay { if event.showAs == .free { shape.strokeBorder(Color.primary.opacity(0.3), lineWidth: 1) } }
+        .opacity(isDimmed ? 0.5 : 1)
+        .help("Private")
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Private, \(timeRangeText(event))")
+    }
+
+    private var meeting: some View {
         Button { showDetails = true } label: { content }
             .buttonStyle(.plain)
             .opacity(isDimmed ? 0.5 : 1)

@@ -12,7 +12,7 @@ struct DayGrid: View {
 
     var body: some View {
         let dayEnd = Calendar.laes.date(byAdding: .day, value: 1, to: day)!
-        let events = store.visibleEvents.filter { !isAllDayBar($0) && $0.start >= day && $0.start < dayEnd }
+        let events = store.calendarEvents.filter { !isAllDayBar($0) && $0.start >= day && $0.start < dayEnd }
             .map { event in
                 var event = event
                 if let resizing, resizing.id == event.id { event.end = resizing.end }

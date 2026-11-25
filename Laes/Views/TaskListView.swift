@@ -181,8 +181,7 @@ extension AppStore {
     }
 }
 
-/// The day and star an add bar's draft names, as badges floating above the bar (use as its top-leading overlay).
-/// Removing one keeps its word in the title.
+/// The day and star an add bar's draft names, as badges to float above the bar. Removing one keeps its word in the title.
 struct QuickAddBadges: View {
     let quick: QuickAdd
     let draft: String
@@ -197,7 +196,6 @@ struct QuickAddBadges: View {
                 badge("Important", "star.fill", Color.important) { ignored.insert(draft[word].lowercased()) }
             }
         }
-        .alignmentGuide(.top) { $0[.bottom] + 8 }   // above the bar without moving the list
         .animation(.snappy, value: quick.due)
     }
 
@@ -544,7 +542,10 @@ struct TaskListView: View {
         .padding(.horizontal, 12)
         .frame(height: 38)
         .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .overlay(alignment: .topLeading) { QuickAddBadges(quick: quick, draft: draft, ignored: $ignored) }
+        .overlay(alignment: .topLeading) {
+            QuickAddBadges(quick: quick, draft: draft, ignored: $ignored)
+                .alignmentGuide(.top) { $0[.bottom] + 8 }   // above the bar without moving the list
+        }
         .padding(.horizontal, 24)
         .padding(.vertical, 14)
     }

@@ -91,6 +91,11 @@ final class AppStore {
     /// Temporary task id -> the id Microsoft assigned, for callers that created a task and want its real id.
     @ObservationIgnored private(set) var adopted: [String: String] = [:]
 
+    /// What the calendar draws: with the private group hidden, its meetings stay as anonymous blocks of time.
+    var calendarEvents: [CalendarEvent] {
+        showPrivate ? events : events.map { hasCategory($0.categories, in: privateCategories) ? $0.redacted : $0 }
+    }
+    /// Without the private group while it is hidden: for reminders, and wherever a meeting's details would show.
     var visibleEvents: [CalendarEvent] {
         showPrivate ? events : events.filter { !hasCategory($0.categories, in: privateCategories) }
     }
@@ -501,7 +506,7 @@ final class AppStore {
 
     private func scheduleReminders() {
         guard isSignedIn else { return }   // no reminders for sample data
-        let meetings = visibleEvents.map { (event: $0, notes: notes(for: $0)) }
+        let meetings = NoteReminders.meetings(for: visibleNotes, loaded: events)
         Task { await NoteReminders.shared.schedule(meetings) }
     }
 

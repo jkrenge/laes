@@ -41,8 +41,8 @@ struct WeekRow: View {
     private func columnBackground(_ colW: CGFloat) -> some View {
         // All-day events tint their whole day column. Ones drawn without a fill (free) or struck
         // through (cancelled, declined) don't, matching how their bar looks.
-        let tints = allDayBars(store.visibleEvents, weekStart: weekStart).filter {
-            $0.event.showAs != .free && !$0.event.isCancelled && $0.event.response != .declined
+        let tints = allDayBars(store.calendarEvents, weekStart: weekStart).filter {
+            $0.event.showAs != .free && !$0.event.isCancelled && $0.event.response != .declined && !$0.event.isRedacted
         }
         return HStack(spacing: 0) {
             Color.clear.frame(width: Self.gutter)
@@ -86,7 +86,7 @@ struct WeekRow: View {
     }
 
     private func allDayStrip(_ colW: CGFloat) -> some View {
-        let bars = allDayBars(store.visibleEvents, weekStart: weekStart)
+        let bars = allDayBars(store.calendarEvents, weekStart: weekStart)
         let overflow = (bars.map(\.lane).max() ?? 0) >= 2
         let visibleLanes = overflow ? 1 : 2
         return ZStack(alignment: .topLeading) {
@@ -102,7 +102,7 @@ struct WeekRow: View {
                         Text("+\(hidden.count) more")
                             .font(.system(size: 10, weight: .medium))
                             .foregroundStyle(Color.subtle)
-                            .help(hidden.map(\.event.title).joined(separator: "\n"))
+                            .help(hidden.map { $0.event.isRedacted ? "Private" : $0.event.title }.joined(separator: "\n"))
                             .offset(x: Self.gutter + CGFloat(day) * colW + 8, y: 4 + Self.laneHeight)
                     }
                 }
@@ -414,7 +414,8 @@ struct TaskDetails: View {
                         #if os(iOS)
                         EntryField(prompt: "Add step", text: $newStep, style: .callout, onReturn: addStep)
                         #else
-                        TextField("Add step", text: $newStep)
+                        TextField("Add step", text: $newStep, axis: .vertical)
+                            .lineLimit(1...6)
                             .textFieldStyle(.plain)
                             .onSubmit(addStep)
                         #endif
@@ -552,13 +553,20 @@ struct StepRow: View {
     @FocusState private var focused: Bool
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
             Button(action: toggle) {
                 Image(systemName: step.isChecked ? "checkmark.circle.fill" : "circle").frame(width: 16)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(step.isChecked ? "Mark \(step.title) as not completed" : "Mark \(step.title) as completed")
-            TextField("Step", text: $title)
+            Group {
+                #if os(macOS)
+                // A vertical field wraps long steps and keeps the text in place when it takes focus.
+                TextField("Step", text: $title, axis: .vertical).lineLimit(1...6)
+                #else
+                TextField("Step", text: $title)
+                #endif
+            }
                 .textFieldStyle(.plain)
                 .padding(.leading, controlInset)
                 .strikethrough(step.isChecked)

@@ -167,7 +167,27 @@ enum MarkdownAction {
     case list(String)           // start the selected lines with this, replacing another list marker
     case indent, dedent
 
-    private static let markers = ["- [ ] ", "- [x] ", "- ", "* ", "+ ", "1. "]
+    private static let markers = ["- [ ] ", "- [x] ", "- [X] ", "- ", "* ", "+ "]
+
+    /// The list marker a line starts with (after its indent), numbered ones included.
+    static func marker(of content: Substring) -> String? {
+        if let marker = markers.first(where: { content.hasPrefix($0) }) { return marker }
+        let digits = content.prefix { $0.isNumber }
+        return !digits.isEmpty && content.dropFirst(digits.count).hasPrefix(". ") ? digits + ". " : nil
+    }
+
+    /// What Return does at the end of a list line: start the next item, or, on an item with nothing in it, end the list.
+    enum Continuation: Equatable { case next(String), end(markerLength: Int) }
+
+    static func continuation(after line: String) -> Continuation? {
+        let content = line.drop { $0 == " " }
+        let indent = String(repeating: " ", count: line.count - content.count)
+        guard let marker = marker(of: content) else { return nil }
+        if content.count == marker.count { return .end(markerLength: indent.count + marker.count) }
+        if marker.hasSuffix("] ") { return .next(indent + "- [ ] ") }
+        if let number = Int(marker.dropLast(2)) { return .next(indent + "\(number + 1). ") }
+        return .next(indent + marker)
+    }
 
     func apply(to text: String, selection: Range<Int>) -> (text: String, selection: Range<Int>) {
         let chars = Array(text)
@@ -196,11 +216,16 @@ enum MarkdownAction {
                 case .indent: return "  " + line
                 case .dedent: return String(line.dropFirst(min(2, spaces.count)))
                 case .list(let marker):
-                    let old = Self.markers.first { content.hasPrefix($0) } ?? ""
+                    let old = Self.marker(of: content) ?? ""
                     return spaces + marker + content.dropFirst(old.count)
                 default: return line
                 }
-            }.joined(separator: "\n")
+            }
+            .enumerated().map { index, line in   // a numbered list counts up
+                if case .list("1. ") = self { return line.replacingOccurrences(of: "1. ", with: "\(index + 1). ", options: .anchored, range: line.range(of: "1. ")) }
+                return line
+            }
+            .joined(separator: "\n")
             let cursor = max(start, upper + lines.count - (end - start))
             return (String(chars[..<start]) + lines + String(chars[end...]), cursor..<cursor)
         }
