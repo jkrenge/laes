@@ -28,6 +28,7 @@ targets:
         INFOPLIST_KEY_CFBundleName: "lães"
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
         ENABLE_HARDENED_RUNTIME: YES
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO   # only Apple's HTTPS, as on the iPhone
     # The Mac App Store needs the sandbox: Microsoft over the network, and the AI connection listening on 127.0.0.1.
     entitlements:
       path: Laes/Laes.entitlements
@@ -51,6 +52,8 @@ targets:
       properties:
         CFBundleName: lães   # iOS prompts (sign-in, notifications) show this one, not the display name
         CFBundleDisplayName: lães
+        CFBundleShortVersionString: $(MARKETING_VERSION)   # one version for iPhone and Mac
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UIBackgroundModes: [fetch]
         BGTaskSchedulerPermittedIdentifiers: [app.laes.Laes.refresh]
         ITSAppUsesNonExemptEncryption: false   # only Apple's HTTPS, so uploads skip the export-compliance question
