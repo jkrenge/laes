@@ -27,6 +27,14 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: "lães"
         INFOPLIST_KEY_CFBundleName: "lães"
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
+        ENABLE_HARDENED_RUNTIME: YES
+    # The Mac App Store needs the sandbox: Microsoft over the network, and the AI connection listening on 127.0.0.1.
+    entitlements:
+      path: Laes/Laes.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.network.client: true
+        com.apple.security.network.server: true
     scheme:
       testTargets: [LaesTests]
   LaesiOS:
@@ -36,7 +44,7 @@ targets:
     sources:
       # The Mac app's code minus its window shell; LaesiOS holds the touch screens.
       - path: Laes
-        excludes: [LaesApp.swift, MCPServer.swift, Assets.xcassets, Views/ContentView.swift, Views/WelcomeView.swift]
+        excludes: [LaesApp.swift, MCPServer.swift, Assets.xcassets, Views/ContentView.swift, Views/WelcomeView.swift, Laes.entitlements, container-migration.plist]
       - LaesiOS
     info:
       path: LaesiOS/Info.plist
