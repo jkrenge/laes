@@ -2,7 +2,9 @@
 
 What changed in lães, newest first. The website shows the same list at [laesapp.com/changelog](https://laesapp.com/changelog/).
 
-## Next version (not yet released)
+## 1.0 (build 4), 27 November 2026
+
+Second beta, and the build sent to App Store review.
 
 - Send Feedback in Settings, on Mac and iPhone.
 - A prompt when a newer version is out.
