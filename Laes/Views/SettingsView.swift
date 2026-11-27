@@ -32,6 +32,8 @@ struct SettingsView: View {
         }
     }
     @State private var pane: Pane? = .general
+    @State private var notificationStatus: UNAuthorizationStatus?
+    @Environment(\.scenePhase) private var scenePhase
     @State private var copiedPrompt = false
     @State private var showFeedback = false
 
@@ -140,18 +142,56 @@ struct SettingsView: View {
     }
 
     @ViewBuilder private var notifications: some View {
+        @Bindable var store = store
+        if let status = notificationStatus, status == .notDetermined || status == .denied {
+            Section {
+                LabeledContent(status == .denied ? "Notifications are off for lães" : "Notifications aren't allowed yet") {
+                    if status == .denied {
+                        Button("Turn On in Settings") { openNotificationSettings() }
+                    } else {
+                        Button("Allow") {
+                            Task {
+                                _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
+                                await refreshNotificationStatus()
+                            }
+                        }
+                    }
+                }
+            } footer: {
+                note("Until the system allows them, none of the below reaches you.")
+            }
+        }
         Section {
-            @Bindable var store = store
             Toggle("Meeting reminders", isOn: $store.meetingReminders)
-            Toggle("To-do badge on the app icon", isOn: $store.todoBadge)
-            Toggle("Morning summary of to-dos", isOn: $store.morningSummary)
+        } footer: {
+            note("Five minutes before a meeting that has notes, lães shows them, including notes an AI tool wrote.")
+        }
+        .task { await refreshNotificationStatus() }
+        .onChange(of: scenePhase) { Task { await refreshNotificationStatus() } }   // back from System Settings
+        Section {
+            Toggle("Badge on the app icon", isOn: $store.todoBadge)
+            Toggle("Morning summary", isOn: $store.morningSummary)
             if store.morningSummary {
                 DatePicker("At", selection: morningTime, displayedComponents: .hourAndMinute)
             }
-            LabeledContent("Allowed by the system") { ReminderPermission() }
+        } header: {
+            Text("To-dos")
         } footer: {
-            note("Five minutes before a meeting that has notes, lães shows them, including notes an AI tool wrote. The badge counts to-dos due today or overdue, and on mornings with any, a notification says how many: numbers only, never what the to-dos say. All are on until you switch them off, on each device.")
+            note("The badge counts to-dos due today or overdue. On mornings with any, a notification says how many: numbers only, never what the to-dos say. All notifications are on until you switch them off, on each device.")
         }
+    }
+
+    /// Notifications do nothing unless the system allows them; the pane says so only when it doesn't.
+    private func refreshNotificationStatus() async {
+        notificationStatus = await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+    }
+
+    private func openNotificationSettings() {
+        #if os(macOS)
+        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension?id=app.laes.Laes")!)
+        #else
+        UIApplication.shared.open(URL(string: UIApplication.openNotificationSettingsURLString)!)
+        #endif
     }
 
     /// The summary's time of day, as the date picker wants it.
@@ -287,40 +327,4 @@ struct SettingsView: View {
             set: { if $0 { store[keyPath: set].insert(value) } else { store[keyPath: set].remove(value) } }
         )
     }
-}
-
-/// Whether notifications are allowed, since reminders silently do nothing without them; a way to allow them if not.
-private struct ReminderPermission: View {
-    @State private var status: UNAuthorizationStatus?
-    @Environment(\.scenePhase) private var scenePhase
-
-    var body: some View {
-        Group {
-            switch status {
-            case .authorized, .provisional, .ephemeral: Text("On").foregroundStyle(Color.subtle)
-            case .notDetermined:
-                Button("Allow") {
-                    Task {
-                        _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
-                        await refresh()
-                    }
-                }
-            case .denied:
-                Button("Turn On in Settings") { open(Self.settingsURL) }
-            default: ProgressView().controlSize(.small)
-            }
-        }
-        .task { await refresh() }
-        .onChange(of: scenePhase) { Task { await refresh() } }   // back from System Settings
-    }
-
-    private func refresh() async { status = await UNUserNotificationCenter.current().notificationSettings().authorizationStatus }
-
-    #if os(macOS)
-    private static let settingsURL = URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension?id=app.laes.Laes")!
-    private func open(_ url: URL) { NSWorkspace.shared.open(url) }
-    #else
-    private static let settingsURL = URL(string: UIApplication.openNotificationSettingsURLString)!
-    private func open(_ url: URL) { UIApplication.shared.open(url) }
-    #endif
 }

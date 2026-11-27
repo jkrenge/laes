@@ -2,9 +2,9 @@
 
 What changed in lães, newest first. The website shows the same list at [laesapp.com/changelog](https://laesapp.com/changelog/).
 
-## 1.0 (build 6), 27 November 2026
+## 1.0 (build 7), 27 November 2026
 
-- Notifications have their own pane in Settings. On iPhone and iPad, where the Tasks tab opens is now under General.
+- Notifications have their own pane in Settings, with a card at the top only while the system doesn't allow them. On iPhone and iPad, where the Tasks tab opens is now under General.
 - On the Mac, ⌘1, ⌘2 and ⌘3 switch to Weeks, Tasks and Notes.
 - Tick a to-do by clicking or tapping its box, without editing the note. Done to-dos are greyed out and struck through.
 - The lines of a long list item or to-do start under its text, not under its marker, while reading and while editing.
