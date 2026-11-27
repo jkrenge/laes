@@ -83,6 +83,27 @@ struct GraphClient {
         return (lists, tasks)
     }
 
+    /// Tasks completed since `since`, across `lists`, newest first. Asked for on demand, not with every sync.
+    func completedTasks(in lists: [TaskList], since: Date) async throws -> [TodoTask] {
+        var tasks: [TodoTask] = []
+        for list in lists {   // one at a time, as in `tasks()`
+            func url(_ filter: String) -> URL {
+                var components = URLComponents(string: Self.base + "/me/todo/lists")!
+                components.path += "/\(list.id)/tasks"
+                components.queryItems = [.init(name: "$filter", value: filter), .init(name: "$top", value: "100")]
+                return components.url!
+            }
+            let day = String(since.ISO8601Format().dropLast())   // UTC, as Graph writes completedDateTime
+            do {
+                tasks += try await paged(url("status eq 'completed' and completedDateTime/dateTime ge '\(day)'")) { try Self.decodeTasks($0, list: list) }
+            } catch let error as GraphError where error.status == 400 {
+                // shortcut: if To Do won't filter by completion date, take all completed tasks and filter here.
+                tasks += try await paged(url("status eq 'completed'")) { try Self.decodeTasks($0, list: list) }
+            }
+        }
+        return tasks.filter { ($0.completed ?? .distantPast) >= since }.sorted { $0.completed! > $1.completed! }
+    }
+
     // MARK: Notes (Markdown files in the app's own OneDrive folder, which Microsoft creates on first use)
 
     struct NoteFile {
@@ -227,6 +248,10 @@ struct GraphClient {
 
     func completeTask(_ task: TodoTask) async throws {
         try await write(taskURL(task), "PATCH", ["status": "completed"])
+    }
+
+    func reopenTask(_ task: TodoTask) async throws {
+        try await write(taskURL(task), "PATCH", ["status": "notStarted"])
     }
 
     /// `day` is a local midnight; To Do stores a due day as that instant in UTC.
@@ -429,6 +454,7 @@ struct GraphClient {
         var recurrence: Recurrence?
         var isReminderOn: Bool?
         var reminderDateTime: DateTimeTimeZone?
+        var completedDateTime: DateTimeTimeZone?
 
         struct Body: Decodable { var content: String?; var contentType: String? }
         struct Recurrence: Decodable {
@@ -449,6 +475,7 @@ struct GraphClient {
             }
             task.repeats = recurrence?.pattern.flatMap { GraphClient.repeatRule(type: $0.type ?? "", interval: $0.interval ?? 1, days: $0.daysOfWeek ?? []) }
             if isReminderOn == true { task.reminder = reminderDateTime.flatMap { GraphClient.utcDate($0.dateTime) } }
+            task.completed = completedDateTime.flatMap { GraphClient.utcDate($0.dateTime) }
             return task
         }
     }

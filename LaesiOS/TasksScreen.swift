@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Where the Tasks tab opens, set in Settings › Behavior.
+/// Where the Tasks tab opens, set in Settings › General.
 enum TasksStart: String { case lists, dueNow }
 
 /// Views and lists. On iPhone tapping one pushes its tasks, and a task opens as a drawer. On iPad the lists,
@@ -16,6 +16,9 @@ struct TasksScreen: View {
     @State private var visibility = NavigationSplitViewVisibility.all
     @AppStorage("tasksStart") private var start = TasksStart.lists
     @AppStorage("plannedFilter") private var planned = PlannedFilter.dueNow
+    @State private var query = ""   // a search across every list, shown in place of the lists (iPhone) or the open one (iPad)
+
+    private var isSearching: Bool { !query.trimmingCharacters(in: .whitespaces).isEmpty }
 
     var body: some View {
         if sizeClass == .regular { columns } else { stack }
@@ -23,8 +26,9 @@ struct TasksScreen: View {
 
     private var stack: some View {
         NavigationStack(path: $path) {
-            lists(List { rows })
-                .navigationDestination(for: TaskSource.self) { TaskListScreen(source: $0) }
+            lists(Group { if isSearching { TaskSearchList(query: query) } else { List { rows } } })
+                .searchable(text: $query, prompt: "Search tasks")
+                .navigationDestination(for: TaskSource.self) { screen(for: $0) }
                 .appToolbar()
         }
         .onChange(of: start, initial: true) {
@@ -37,11 +41,16 @@ struct TasksScreen: View {
             let third = geo.size.width / 3
             NavigationSplitView(columnVisibility: $visibility) {
                 lists(List(selection: $source) { rows })
+                    .searchable(text: $query, placement: .sidebar, prompt: "Search tasks")
                     .navigationSplitViewColumnWidth(third)
                     .toolbar(removing: .sidebarToggle)   // the lists always stay
             } content: {
                 Group {
-                    if let source {
+                    if isSearching {
+                        TaskSearchList(query: query, opened: $task)
+                    } else if source == .completed {
+                        CompletedTasksScreen()
+                    } else if let source {
                         TaskListScreen(source: source, opened: $task).id(source)
                     } else {
                         Text("Select a list").foregroundStyle(Color.subtle)
@@ -66,7 +75,11 @@ struct TasksScreen: View {
         .onChange(of: start, initial: true) {
             if start == .dueNow { (planned, source) = (.dueNow, .planned) } else if source == nil { source = .planned }
         }
-        .onChange(of: source) { task = nil }
+        .onChange(of: source) { task = nil; query = "" }
+    }
+
+    @ViewBuilder private func screen(for source: TaskSource) -> some View {
+        if source == .completed { CompletedTasksScreen(showsEye: true) } else { TaskListScreen(source: source) }
     }
 
     private func lists(_ list: some View) -> some View {
@@ -81,6 +94,7 @@ struct TasksScreen: View {
             row("Planned", "calendar", .planned)
             row("Important", "star", .important)
             row("All", "tray.full", .all)
+            row("Completed", "checkmark.circle", .completed)
             ForEach(store.visibleLists.filter(\.isBuiltIn)) { row($0.name, $0.icon, .list($0.id)) }
         }
         Section("Lists") {
@@ -235,5 +249,82 @@ struct TaskListScreen: View {
         guard let task = store.addTask(quick, otherwise: source == .planned ? planned.newTaskDay(today: today) : nil, listID: listID) else { return }
         added.append(task.id)
         (draft, ignored) = ("", [])
+    }
+}
+
+/// Open matches in every list, then completed ones. On iPad the tapped task opens beside it, else as a drawer.
+struct TaskSearchList: View {
+    @Environment(AppStore.self) private var store
+    let query: String
+    var opened: Binding<TodoTask?>?
+    @State private var selected: TodoTask?
+
+    var body: some View {
+        let today = Calendar.laes.startOfDay(for: .now)
+        let open = searchTasks(store.visibleTasks, query)
+        let done = searchTasks(store.visibleCompleted, query)
+        List {
+            ForEach(open) { task in
+                TaskListRow(task: task, today: today, showsList: true, isSelected: opened?.wrappedValue?.id == task.id, query: query) {
+                    if let opened { opened.wrappedValue = task } else { selected = task }
+                }
+                .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
+            }
+            if !done.isEmpty {
+                Section("Completed") {
+                    ForEach(done) { CompletedTaskRow(task: $0, query: query).listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20)) }
+                }
+            }
+            if open.isEmpty, done.isEmpty {
+                Text(store.isLoadingCompleted ? "Searching…" : "No tasks match").foregroundStyle(Color.subtle)
+                    .frame(maxWidth: .infinity).listRowSeparator(.hidden)
+            }
+        }
+        .listStyle(.plain)
+        .task { await store.loadCompleted() }   // so done tasks are found too
+        .sheet(item: $selected) { opened in
+            let task = store.tasks.first { $0.id == opened.id || $0.id == store.adopted[opened.id] } ?? opened
+            TaskDetails(task: task, close: { selected = nil }).id(opened.id)
+        }
+    }
+}
+
+/// Done tasks by day, newest first; the last 30 days at first. Tapping a tick reopens the task.
+struct CompletedTasksScreen: View {
+    @Environment(AppStore.self) private var store
+    var showsEye = false   // iPhone: as on the other task screens; on iPad it sits over the details
+
+    var body: some View {
+        let groups = completedGroups(store.visibleCompleted, now: .now)
+        List {
+            ForEach(groups, id: \.title) { group in
+                Section(group.title) {
+                    ForEach(group.tasks) { CompletedTaskRow(task: $0).listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20)) }
+                }
+            }
+            if store.isLoadingCompleted {
+                ProgressView().frame(maxWidth: .infinity).listRowSeparator(.hidden)
+            } else {
+                if groups.isEmpty {
+                    Text("Nothing completed lately").foregroundStyle(Color.subtle).frame(maxWidth: .infinity).listRowSeparator(.hidden)
+                }
+                if store.isSignedIn {
+                    Button("Show Older") { Task { await store.loadOlderCompleted() } }.listRowSeparator(.hidden)
+                }
+            }
+        }
+        .listStyle(.plain)
+        .navigationTitle("Completed")
+        .toolbar {
+            if showsEye {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button { store.showPrivate.toggle() } label: {
+                        Label(store.showPrivate ? "Hide Private" : "Show Private", systemImage: store.showPrivate ? "eye" : "eye.slash")
+                    }
+                }
+            }
+        }
+        .refreshable { await store.refresh() }
+        .task { await store.loadCompleted() }
     }
 }

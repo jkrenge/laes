@@ -66,6 +66,7 @@ struct TodoTask: Identifiable, Hashable, Codable, Sendable {
     var notesReadOnly = false   // formatted (HTML) in Outlook: shown as text, never overwritten
     var repeats: RepeatRule?    // nil for one-off tasks
     var reminder: Date?         // when To Do reminds the user; nil if off
+    var completed: Date?        // when it was ticked off; nil while open
 
     var recurrence: String? { repeats?.text }
 }

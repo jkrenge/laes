@@ -88,4 +88,17 @@ enum SampleData {
             TodoTask(id: "task-11", title: "Read onboarding guide", listName: "Personal"),
         ]
     }
+
+    /// Done ones, for the Completed view: hours and days before `now`.
+    static func completedTasks(now: Date) -> [TodoTask] {
+        func ago(_ hours: Double) -> Date { now.addingTimeInterval(-hours * 3600) }
+        return [
+            TodoTask(id: "done-1", title: "Book flights for the offsite", listName: "Personal", completed: ago(1)),
+            TodoTask(id: "done-2", title: "Reply to the team survey reminder", listName: "Work", completed: ago(3)),
+            TodoTask(id: "done-3", title: "Draft budget questions", listName: "Work", completed: ago(26)),
+            TodoTask(id: "done-4", title: "Pick up parcel", listName: "Personal", completed: ago(30)),
+            TodoTask(id: "done-5", title: "Review last quarter's project plan", listName: "Work", completed: ago(80)),
+            TodoTask(id: "done-6", title: "Send meeting room feedback", listName: "Work", completed: ago(200)),
+        ]
+    }
 }

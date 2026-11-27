@@ -172,7 +172,7 @@ struct GraphTests {
         { "value": [
           { "id": "a", "title": "Weekdays", "isReminderOn": true, "reminderDateTime": { "dateTime": "2026-11-23T08:00:00.0000000", "timeZone": "UTC" },
             "recurrence": { "pattern": { "type": "weekly", "interval": 1, "daysOfWeek": ["monday", "tuesday", "wednesday", "thursday", "friday"] } } },
-          { "id": "b", "title": "Off", "isReminderOn": false, "reminderDateTime": { "dateTime": "2026-11-23T08:00:00.0000000", "timeZone": "UTC" },
+          { "id": "b", "title": "Off", "isReminderOn": false, "completedDateTime": { "dateTime": "2026-11-26T17:48:00.0000000", "timeZone": "UTC" }, "reminderDateTime": { "dateTime": "2026-11-23T08:00:00.0000000", "timeZone": "UTC" },
             "recurrence": { "pattern": { "type": "weekly", "interval": 2, "daysOfWeek": ["monday"] } } }
         ] }
         """
@@ -182,6 +182,8 @@ struct GraphTests {
         #expect(tasks[0].reminder == GraphClient.utcDate("2026-11-23T08:00:00"))
         #expect(tasks[1].repeats == RepeatRule(unit: .weekly, interval: 2))
         #expect(tasks[1].reminder == nil)
+        #expect(tasks[0].completed == nil)
+        #expect(tasks[1].completed == GraphClient.utcDate("2026-11-26T17:48:00"))
 
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = TimeZone(identifier: "Europe/Berlin")!

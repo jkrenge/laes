@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import Testing
 @testable import Laes
 
@@ -123,4 +124,29 @@ import Testing
     #expect(toggleTask(in: "x\n- [ ] a\n- [X] b", line: 1) == "x\n- [x] a\n- [X] b")
     #expect(toggleTask(in: "x\n- [ ] a\n- [X] b", line: 2) == "x\n- [ ] a\n- [ ] b")
     #expect(toggleTask(in: "x", line: 0) == "x")
+}
+
+@Test func taskSearchFindsTitlesAndNotesAndGroupsDoneByDay() {
+    let tasks = [
+        TodoTask(id: "1", title: "Send pricing deck", listName: "Work"),
+        TodoTask(id: "2", title: "Call Jonas", listName: "Personal", notes: "ask about the new price list"),
+        TodoTask(id: "3", title: "Water plants", listName: "Errands"),
+    ]
+    #expect(searchTasks(tasks, "pric").map(\.id) == ["1", "2"])      // the title counts more than the note
+    #expect(searchTasks(tasks, "plnts").map(\.id) == ["3"])          // a typo
+    #expect(searchTasks(tasks, " ").isEmpty)
+    let marked = highlighting("Send pricing deck", "pric")
+    #expect(marked.runs.contains { $0.backgroundColor != nil && String(marked[$0.range].characters) == "pricing" })
+
+    var cal = Calendar(identifier: .gregorian)
+    cal.timeZone = TimeZone(identifier: "Europe/Berlin")!
+    cal.firstWeekday = 7   // Saturday, as lães starts weeks
+    let now = cal.date(from: DateComponents(year: 2026, month: 11, day: 27, hour: 16))!   // a Friday
+    func done(_ id: String, daysAgo: Int) -> TodoTask {
+        TodoTask(id: id, title: id, listName: "L", completed: cal.date(byAdding: .day, value: -daysAgo, to: now))
+    }
+    let groups = completedGroups([done("old", daysAgo: 40), done("today", daysAgo: 0), done("yesterday", daysAgo: 1),
+                                  done("week", daysAgo: 5), done("last", daysAgo: 8)], now: now, calendar: cal)
+    #expect(groups.map(\.title) == ["Today", "Yesterday", "This Week", "Last Week", "October 2026"])
+    #expect(groups.map { $0.tasks.map(\.id) } == [["today"], ["yesterday"], ["week"], ["last"], ["old"]])
 }

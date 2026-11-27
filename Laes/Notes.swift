@@ -174,8 +174,27 @@ func fuzzyMatch(_ word: String, _ term: String) -> Double {
 /// shortcut: keyword search over notes held in memory, no embeddings; add a vector index if meaning-based search is needed.
 func searchNotes(_ notes: [Note], _ query: String, limit: Int = 10) -> [NoteHit] {
     let terms = Set(words(query))
-    guard !terms.isEmpty, !notes.isEmpty else { return [] }
-    let docs = notes.map { words($0.title + " " + $0.title + " " + $0.body) }
+    let scores = searchScores(notes.map { $0.title + " " + $0.title + " " + $0.body }, terms)
+    let hits = zip(notes, scores).compactMap { note, score -> NoteHit? in
+        guard score > 0 else { return nil }
+        let lines = note.body.components(separatedBy: "\n").filter { !$0.hasPrefix("# ") }   // the title is shown anyway
+        let line = lines.first { line in words(line).contains { word in terms.contains { fuzzyMatch(word, $0) > 0 } } }
+            ?? lines.first { !$0.isEmpty } ?? ""
+        return NoteHit(note: note, score: score, snippet: String(plainMarkdown(line).prefix(200)))
+    }
+    return Array(hits.sorted { $0.score > $1.score }.prefix(limit))
+}
+
+/// Tasks matching a search in their title (counted double) or note, best first.
+func searchTasks(_ tasks: [TodoTask], _ query: String) -> [TodoTask] {
+    let scores = searchScores(tasks.map { $0.title + " " + $0.title + " " + $0.notes }, Set(words(query)))
+    return zip(tasks, scores).filter { $1 > 0 }.sorted { $0.1 > $1.1 }.map(\.0)
+}
+
+/// BM25 scores of `texts` for the query words `terms`; 0 where none matches.
+private func searchScores(_ texts: [String], _ terms: Set<String>) -> [Double] {
+    guard !terms.isEmpty, !texts.isEmpty else { return texts.map { _ in 0 } }
+    let docs = texts.map(words)
     let average = max(1, Double(docs.map(\.count).reduce(0, +)) / Double(docs.count))
     // Each different word once, not every word of every note.
     let vocabulary = Set(docs.joined())
@@ -189,7 +208,7 @@ func searchNotes(_ notes: [Note], _ query: String, limit: Int = 10) -> [NoteHit]
     let containing = Dictionary(uniqueKeysWithValues: terms.map { term in
         (term, Double(docs.filter { $0.contains { matches($0, term) } }.count))
     })
-    let hits = zip(notes, docs).compactMap { note, doc -> NoteHit? in
+    return docs.map { doc in
         var score = 0.0
         for term in terms {
             let frequency = doc.reduce(0.0) { $0 + (weights[term]?[$1] ?? 0) }
@@ -197,13 +216,8 @@ func searchNotes(_ notes: [Note], _ query: String, limit: Int = 10) -> [NoteHit]
             let idf = log(1 + (Double(docs.count) - containing[term]! + 0.5) / (containing[term]! + 0.5))
             score += idf * frequency * 2.2 / (frequency + 1.2 * (0.25 + 0.75 * Double(doc.count) / average))
         }
-        guard score > 0 else { return nil }
-        let lines = note.body.components(separatedBy: "\n").filter { !$0.hasPrefix("# ") }   // the title is shown anyway
-        let line = lines.first { line in words(line).contains { word in terms.contains { matches(word, $0) } } }
-            ?? lines.first { !$0.isEmpty } ?? ""
-        return NoteHit(note: note, score: score, snippet: String(plainMarkdown(line).prefix(200)))
+        return score
     }
-    return Array(hits.sorted { $0.score > $1.score }.prefix(limit))
 }
 
 // MARK: Formatting buttons

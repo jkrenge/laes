@@ -21,6 +21,10 @@ final class AppStore {
     var isOffline = false
     /// Task edits not yet sent to Microsoft, oldest first.
     private(set) var pending: [PendingEdit] = []
+    /// Tasks completed since `completedSince`, newest first: loaded when the Completed view or a search asks.
+    private(set) var completedTasks: [TodoTask] = []
+    private(set) var completedSince: Date?
+    private(set) var isLoadingCompleted = false
 
     // The private group: hidden everywhere while `showPrivate` is off.
     var showPrivate = UserDefaults.standard.object(forKey: "showPrivate") as? Bool ?? true {
@@ -192,6 +196,7 @@ final class AppStore {
             isSignedIn = true
             Aptabase.shared.trackEvent("signed_in")
             (events, tasks, taskLists, checklists, categoryColors, notes) = ([], [], [], [:], [:], [])   // drop the sample data
+            (completedTasks, completedSince) = ([], nil)
             await refresh()
         } catch {
             errorMessage = error.localizedDescription
@@ -203,6 +208,7 @@ final class AppStore {
         isSignedIn = false
         pending = []
         checklists = [:]
+        (completedTasks, completedSince) = ([], nil)
         notes = []
         Disk.removeAll()
         loadSample()
@@ -260,6 +266,8 @@ final class AppStore {
                     if let list = taskLists.first(where: { $0.id == edit.listID }) {
                         adopt(try await graph.createTask(title: title, due: due, in: list).id, for: edit.taskID)
                     }
+                case .reopen:
+                    try await graph.reopenTask(task)
                 case .complete:
                     try await graph.completeTask(task)
                     if refetchAfterCompleting.remove(edit.taskID) != nil {
@@ -338,6 +346,10 @@ final class AppStore {
                 try? Disk.save(EventSnapshot(weekStart: weekStart, events: events), to: "events.json")
             }
             await syncNotes()
+            if let since = completedSince {   // keep the Completed view current, over the same days
+                completedSince = nil
+                await loadCompleted(days: Calendar.laes.dateComponents([.day], from: since, to: Calendar.laes.startOfDay(for: .now)).day ?? 30)
+            }
         } catch is URLError {
             isOffline = true
         } catch {
@@ -669,7 +681,52 @@ final class AppStore {
         return task
     }
 
+    var visibleCompleted: [TodoTask] {
+        showPrivate ? completedTasks : completedTasks.filter { !privateListIDs.contains($0.listID) }
+    }
+
+    /// Loads tasks completed in the last `days` days, unless as many are loaded already. Not kept offline:
+    /// it is history, asked for now and then.
+    func loadCompleted(days: Int = 30) async {
+        let since = Calendar.laes.date(byAdding: .day, value: -days, to: Calendar.laes.startOfDay(for: .now))!
+        guard isSignedIn, !isLoadingCompleted, (completedSince ?? .distantFuture) > since else { return }
+        isLoadingCompleted = true
+        defer { isLoadingCompleted = false }
+        do {
+            let loaded = try await GraphClient(auth: auth).completedTasks(in: taskLists, since: since)
+            let reopened = Set(pending.filter { $0.kind == .reopen }.map(\.taskID))
+            let open = Set(tasks.map(\.id))
+            completedTasks = loaded.filter { !reopened.contains($0.id) && !open.contains($0.id) }
+            completedSince = since
+        } catch is URLError {
+            isOffline = true
+        } catch {
+            errorMessage = error.localizedDescription
+            Reporting.failed("completed", error)
+        }
+    }
+
+    /// Reaches 90 days further back than what is loaded.
+    func loadOlderCompleted() async {
+        let loaded = completedSince.flatMap { Calendar.laes.dateComponents([.day], from: $0, to: Calendar.laes.startOfDay(for: .now)).day } ?? 30
+        await loadCompleted(days: loaded + 90)
+    }
+
+    /// Marks a completed task as not completed: it goes back among the open ones.
+    func reopen(_ task: TodoTask) {
+        completedTasks.removeAll { $0.id == task.id }
+        var open = task
+        open.completed = nil
+        tasks.append(open)
+        enqueue(.reopen, for: task)
+    }
+
     func complete(_ task: TodoTask) {
+        if completedSince != nil || !isSignedIn {   // the Completed view shows it at once
+            var done = task
+            done.completed = .now
+            completedTasks.insert(done, at: 0)
+        }
         tasks.removeAll { $0.id == task.id }
         checklists[task.id] = nil
         if task.recurrence != nil { refetchAfterCompleting.insert(task.id) }
@@ -820,6 +877,7 @@ final class AppStore {
     private func loadSample() {
         events = SampleData.events(weekStart: weekStart)
         tasks = SampleData.tasks(weekStart: weekStart).map { var t = $0; t.listID = t.listName; return t }
+        completedTasks = SampleData.completedTasks(now: .now).map { var t = $0; t.listID = t.listName; return t }
         taskLists = Set(tasks.map(\.listName)).sorted().map { TaskList(id: $0, name: $0) }
         categoryColors = SampleData.categoryColors
         if notes.isEmpty, let meeting = events.first(where: { !$0.isAllDay }) {

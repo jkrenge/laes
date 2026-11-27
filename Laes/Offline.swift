@@ -7,6 +7,7 @@ struct PendingEdit: Codable, Hashable, Sendable {
     enum Kind: Codable, Hashable, Sendable {
         case create(title: String, due: Date?)
         case complete
+        case reopen
         case setDue(Date?)
         case setNotes(String)
         case setTitle(String)
@@ -37,6 +38,8 @@ func applying(_ edits: [PendingEdit], to tasks: [TodoTask], lists: [TaskList]) -
             }
         case .complete:
             if let index { tasks.remove(at: index) }
+        case .reopen:
+            break   // the store keeps the reopened task until Microsoft sends it back as open
         case .setDue(let day):
             if let index { tasks[index].due = day }
         case .setNotes(let text):
@@ -67,7 +70,7 @@ func applying(_ edits: [PendingEdit], toSteps steps: [ChecklistItem], of taskID:
             if let index = steps.firstIndex(where: { $0.id == id }) { steps[index].title = title }
         case .addStep(let id, let title):
             if !steps.contains(where: { $0.id == id }) { steps.append(ChecklistItem(id: id, title: title)) }
-        case .create, .complete, .setDue, .setNotes, .setTitle, .setImportant, .setReminder, .setRepeat:
+        case .create, .complete, .reopen, .setDue, .setNotes, .setTitle, .setImportant, .setReminder, .setRepeat:
             break
         }
     }

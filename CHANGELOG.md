@@ -2,6 +2,11 @@
 
 What changed in lães, newest first. The website shows the same list at [laesapp.com/changelog](https://laesapp.com/changelog/).
 
+## 1.0 (build 8), 27 November 2026
+
+- Search your tasks: one field above the lists finds tasks in every list by title or note, typos too, with done ones below. On the Mac, ⌘F goes to it.
+- A Completed view under Planned, Important and All shows what you finished, by day, from the last 30 days on. Tap or click a tick to reopen a task.
+
 ## 1.0 (build 7), 27 November 2026
 
 - Notifications have their own pane in Settings, with a card at the top only while the system doesn't allow them. On iPhone and iPad, where the Tasks tab opens is now under General.

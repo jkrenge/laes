@@ -46,7 +46,7 @@ enum TaskSort: String, CaseIterable {
 
 /// What a task list shows: one of the built-in views, or one To Do list.
 enum TaskSource: Hashable {
-    case planned, important, all, list(String)
+    case planned, important, all, completed, list(String)
 }
 
 extension AppStore {
@@ -61,6 +61,7 @@ extension AppStore {
             case .planned: task.due != nil
             case .important: task.isImportant
             case .all: true
+            case .completed: false   // see `visibleCompleted`
             case .list(let id): task.listID == id
             }
         }
@@ -71,6 +72,7 @@ extension AppStore {
         case .planned: "Planned"
         case .important: "Important"
         case .all: "All"
+        case .completed: "Completed"
         case .list(let id): taskLists.first { $0.id == id }?.name ?? "Tasks"
         }
     }
@@ -362,6 +364,89 @@ struct OrderNote: View {
     }
 }
 
+/// `text` with the words a search matched marked, for showing results.
+func highlighting(_ text: String, _ query: String) -> AttributedString {
+    var out = AttributedString(text)
+    let terms = Set(query.lowercased().split { !$0.isLetter && !$0.isNumber }.map(String.init))
+    guard !terms.isEmpty else { return out }
+    var start = text.startIndex
+    for word in text.split(whereSeparator: { !$0.isLetter && !$0.isNumber }) {
+        guard terms.contains(where: { fuzzyMatch(word.lowercased(), $0) > 0 }),
+              let range = text.range(of: word, range: start..<text.endIndex),
+              let marked = Range(range, in: out) else { continue }
+        out[marked].backgroundColor = Color(red: 1, green: 0.79, blue: 0.26).opacity(0.5)   // the warm accent
+        start = range.upperBound
+    }
+    return out
+}
+
+/// Completed tasks by when they were done: Today, Yesterday, This Week, Last Week, then by month.
+func completedGroups(_ tasks: [TodoTask], now: Date, calendar: Calendar = .laes) -> [(title: String, tasks: [TodoTask])] {
+    let today = calendar.startOfDay(for: now)
+    let week = calendar.weekStart(for: now)
+    func title(_ date: Date) -> String {
+        let day = calendar.startOfDay(for: date)
+        if day == today { return "Today" }
+        if calendar.date(byAdding: .day, value: 1, to: day) == today { return "Yesterday" }
+        if day >= week { return "This Week" }
+        if day >= calendar.date(byAdding: .day, value: -7, to: week)! { return "Last Week" }
+        return date.formatted(.dateTime.month(.wide).year())
+    }
+    var groups: [(title: String, tasks: [TodoTask])] = []
+    for task in tasks.sorted(by: { ($0.completed ?? .distantPast) > ($1.completed ?? .distantPast) }) {
+        let name = title(task.completed ?? .distantPast)
+        if groups.last?.title == name { groups[groups.count - 1].tasks.append(task) } else { groups.append((name, [task])) }
+    }
+    return groups
+}
+
+/// A completed task: ticked, greyed and struck through. The tick reopens it.
+struct CompletedTaskRow: View {
+    @Environment(AppStore.self) private var store
+    let task: TodoTask
+    var query = ""
+    var now = Date.now
+
+    private var when: String {
+        guard let done = task.completed else { return "" }
+        let days = Calendar.laes.dateComponents([.day], from: Calendar.laes.startOfDay(for: done), to: Calendar.laes.startOfDay(for: now)).day ?? 0
+        return days < 2 ? done.formatted(date: .omitted, time: .shortened) : done.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated))
+    }
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Button { store.reopen(task) } label: {
+                Image(systemName: "checkmark.circle.fill").font(.system(size: 15)).foregroundStyle(Color.brandText)
+                    .contentShape(Rectangle().inset(by: -6))
+            }
+            .buttonStyle(.plain)
+            .help("Mark as Not Completed")
+            .accessibilityLabel("Mark as Not Completed")
+            VStack(alignment: .leading, spacing: 2) {
+                Text(highlighting(task.title, query)).strikethrough().foregroundStyle(Color.subtle).lineLimit(1)
+                HStack(spacing: 8) {
+                    Text(task.listName)
+                    Text(when)
+                }
+                .font(.caption)
+                .foregroundStyle(Color.subtle)
+                .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+        }
+        #if os(macOS)
+        .padding(.vertical, 8)
+        .padding(.horizontal, 12)
+        .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        #else
+        .padding(.vertical, 7)
+        #endif
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(task.title), completed, \(task.listName)")
+        .accessibilityAction(named: "Mark as Not Completed") { store.reopen(task) }
+    }
+}
+
 #if os(macOS)
 /// All open tasks: views and lists on the left, the chosen tasks in the middle, one task's details on the right.
 struct TaskListView: View {
@@ -378,8 +463,11 @@ struct TaskListView: View {
     @State private var listEdit: ListEdit?
     @State private var added: [String] = []   // tasks added to the open list, shown last
     @AppStorage("taskSort") private var sort = TaskSort.list
+    @State private var query = ""   // a search across every list, shown instead of the chosen one
+    @FocusState private var searchFocused: Bool
 
     private var current: TaskSource { source ?? .planned }
+    private var isSearching: Bool { !query.trimmingCharacters(in: .whitespaces).isEmpty }
     private var today: Date { Calendar.laes.startOfDay(for: now) }
     private var lists: [TaskList] { store.visibleLists.filter { !$0.isBuiltIn } }   // the user's own, reorderable
     private var shown: [TodoTask] { store.sortedTasks(in: current, planned: planned, now: now, by: sort, addedLast: added) }
@@ -391,9 +479,15 @@ struct TaskListView: View {
             sidebar.frame(width: 230)
             Divider()
             VStack(alignment: .leading, spacing: 0) {
-                header
-                taskList
-                if current != .important { addBar.disabled(!isShown) }
+                if isSearching {
+                    searchResults
+                } else if current == .completed {
+                    completedList
+                } else {
+                    header
+                    taskList
+                    if current != .important { addBar.disabled(!isShown) }
+                }
             }
             if let task = selected {
                 Divider()
@@ -407,7 +501,16 @@ struct TaskListView: View {
             }
         }
         .focusedSceneValue(\.selectedTask, isShown ? selected : nil)
-        .onChange(of: source) { added = [] }
+        .onChange(of: source) { added = []; query = "" }
+        .task(id: isSearching) { if isSearching { await store.loadCompleted() } }   // so done tasks are found too
+        .background {
+            Button("Search Tasks") { searchFocused = true }
+                .keyboardShortcut("f")
+                .disabled(!isShown)
+                .frame(width: 0, height: 0)
+                .opacity(0)
+                .accessibilityHidden(true)
+        }
     }
 
     private var selected: TodoTask? {
@@ -423,6 +526,7 @@ struct TaskListView: View {
                 sidebarRow("Planned", "calendar", .planned)
                 sidebarRow("Important", "star", .important)
                 sidebarRow("All", "tray.full", .all)
+                sidebarRow("Completed", "checkmark.circle", .completed)
                 ForEach(store.visibleLists.filter(\.isBuiltIn)) { sidebarRow($0.name, $0.icon, .list($0.id)) }
             }
             Section("Lists") {
@@ -439,6 +543,14 @@ struct TaskListView: View {
             }
         }
         .listStyle(.sidebar)
+        .safeAreaInset(edge: .top, spacing: 0) {   // as in Notes
+            TextField("Search tasks (⌘F)", text: $query)
+                .textFieldStyle(.roundedBorder)
+                .focused($searchFocused)
+                .onExitCommand { query = ""; searchFocused = false }
+                .disabled(!isShown)
+                .padding(10)
+        }
         .safeAreaInset(edge: .bottom, alignment: .leading) {
             VStack(alignment: .leading, spacing: 0) {
                 if showOrderNote {
@@ -522,6 +634,84 @@ struct TaskListView: View {
         if case .list = current { true } else { false }
     }
 
+    // MARK: Search and completed
+
+    /// Open matches in every list, then completed ones.
+    private var searchResults: some View {
+        let open = searchTasks(store.visibleTasks, query)
+        let done = searchTasks(store.visibleCompleted, query)
+        return VStack(alignment: .leading, spacing: 0) {
+            pageTitle("Results for “\(query.trimmingCharacters(in: .whitespaces))”",
+                      "In every list, titles and notes · Esc goes back to \(title)")
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 4) {
+                    ForEach(open) { task in
+                        TaskListRow(task: task, today: today, showsList: true, isSelected: task.id == selected?.id, query: query) {
+                            selectedID = selected?.id == task.id ? nil : task.id
+                        }
+                    }
+                    if !done.isEmpty {
+                        groupTitle("Completed")
+                        ForEach(done) { CompletedTaskRow(task: $0, query: query, now: now) }
+                    }
+                    if open.isEmpty, done.isEmpty {
+                        Text(store.isLoadingCompleted ? "Searching…" : "No tasks match").foregroundStyle(Color.subtle).padding(40).frame(maxWidth: .infinity)
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 16)
+            }
+        }
+    }
+
+    /// Done tasks by day, newest first; the last 30 days at first.
+    private var completedList: some View {
+        let groups = completedGroups(store.visibleCompleted, now: now)
+        return VStack(alignment: .leading, spacing: 0) {
+            pageTitle("Completed", store.completedSince.map { "Since \($0.formatted(.dateTime.day().month(.wide))), newest first · click a tick to reopen" }
+                      ?? "Newest first · click a tick to reopen")
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 4) {
+                    ForEach(groups, id: \.title) { group in
+                        groupTitle(group.title)
+                        ForEach(group.tasks) { CompletedTaskRow(task: $0, now: now) }
+                    }
+                    if store.isLoadingCompleted {
+                        ProgressView().controlSize(.small).padding(20).frame(maxWidth: .infinity)
+                    } else {
+                        if groups.isEmpty {
+                            Text("Nothing completed lately").foregroundStyle(Color.subtle).padding(40).frame(maxWidth: .infinity)
+                        }
+                        if store.isSignedIn {
+                            Button("Show Older") { Task { await store.loadOlderCompleted() } }
+                                .buttonStyle(.link)
+                                .padding(.top, 14)
+                        }
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 16)
+            }
+        }
+        .task { await store.loadCompleted() }
+    }
+
+    private func pageTitle(_ title: String, _ caption: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title).font(.title2.weight(.semibold)).lineLimit(1).accessibilityAddTraits(.isHeader)
+            Text(caption).font(.caption).foregroundStyle(Color.subtle)
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 20)
+        .padding(.bottom, 8)
+    }
+
+    private func groupTitle(_ title: String) -> some View {
+        Text(title).font(.caption.weight(.semibold)).foregroundStyle(Color.subtle)
+            .padding(.top, 14).padding(.bottom, 2)
+            .accessibilityAddTraits(.isHeader)
+    }
+
     /// New tasks go to the open list (else To Do's default list); in Planned they are due on the filter's day.
     /// A day or "star" typed into the title is underlined, shown as a badge above, and applied instead.
     private var addBar: some View {
@@ -560,6 +750,7 @@ struct TaskListRow: View {
     let today: Date
     let showsList: Bool
     let isSelected: Bool
+    var query = ""   // a search's words, marked in the title
     let select: () -> Void
 
     private var isOverdue: Bool { task.due.map { $0 < today } ?? false }
@@ -583,7 +774,7 @@ struct TaskListRow: View {
             Image(systemName: "circle").font(.system(size: 14)).foregroundStyle(Color.subtle)
             #endif
             VStack(alignment: .leading, spacing: 2) {
-                Text(task.title).lineLimit(1).foregroundStyle(target == nil ? Color.primary : Color.subtle)
+                Text(highlighting(task.title, query)).lineLimit(1).foregroundStyle(target == nil ? Color.primary : Color.subtle)
                 HStack(spacing: 8) {
                     if let target {
                         HStack(spacing: 4) {
