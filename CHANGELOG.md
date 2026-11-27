@@ -2,13 +2,14 @@
 
 What changed in lães, newest first. The website shows the same list at [laesapp.com/changelog](https://laesapp.com/changelog/).
 
-## 1.0 (build 5), 27 November 2026
+## 1.0 (build 6), 27 November 2026
 
+- Notifications have their own pane in Settings. On iPhone and iPad, where the Tasks tab opens is now under General.
 - On the Mac, ⌘1, ⌘2 and ⌘3 switch to Weeks, Tasks and Notes.
 - Tick a to-do by clicking or tapping its box, without editing the note. Done to-dos are greyed out and struck through.
 - The lines of a long list item or to-do start under its text, not under its marker, while reading and while editing.
 - On iPhone and iPad, to-do boxes have the same rounded look, ticked or not.
-- The app icon shows how many to-dos are due today or overdue, and a morning notification (9:00 unless you pick another time) says how many. Both are on from the start; switch them off, or meeting reminders too, in Settings › General › Notifications.
+- The app icon shows how many to-dos are due today or overdue, and a morning notification (9:00 unless you pick another time) says how many. Both are on from the start; switch them off, or meeting reminders too, in Settings › Notifications.
 - Search forgives typos: "meetnig" finds "meeting".
 - The notes list shows each note's first line without its Markdown, and how many of its to-dos are done.
 - The *lães settings* note sits more quietly at the end of the list.

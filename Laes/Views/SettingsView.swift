@@ -13,20 +13,19 @@ struct SettingsView: View {
 
     private enum Pane: String, CaseIterable, Identifiable {
         #if os(macOS)
-        case general = "General", privateGroup = "Private Group", icon = "App Icon", ai = "AI Access", about = "About & Legal"
+        case general = "General", notifications = "Notifications", privateGroup = "Private Group", icon = "App Icon", ai = "AI Access", about = "About & Legal"
         #else
-        case general = "General", behavior = "Behavior", privateGroup = "Private Group", icon = "App Icon", about = "About & Legal"
+        case general = "General", notifications = "Notifications", privateGroup = "Private Group", icon = "App Icon", about = "About & Legal"
         #endif
         var id: Self { self }
         var icon: String {
             switch self {
             case .general: "gearshape"
+            case .notifications: "bell.badge"
             case .privateGroup: "eye.slash"
             case .icon: "paintpalette"
             #if os(macOS)
             case .ai: "sparkles"
-            #else
-            case .behavior: "hand.tap"
             #endif
             case .about: "info.circle"
             }
@@ -59,7 +58,7 @@ struct SettingsView: View {
         }
     }
 
-    @ViewBuilder private var behavior: some View {
+    @ViewBuilder private var tasksOpens: some View {
         Section {
             Picker("Tasks opens", selection: $tasksStart) {
                 Text("Your lists").tag(TasksStart.lists)
@@ -93,9 +92,9 @@ struct SettingsView: View {
         case .general: form { account; general }
         case .ai: form { ai }
         #else
-        case .general: form { general }
-        case .behavior: form { behavior }
+        case .general: form { general; tasksOpens }
         #endif
+        case .notifications: form { notifications }
         case .privateGroup: form { privateGroup }
         case .about: form { about }
         }
@@ -126,20 +125,6 @@ struct SettingsView: View {
         } footer: {
             note("Notes are Markdown files in a OneDrive folder only lães uses. Switch this off if your account has no OneDrive or your organisation doesn't allow it; signing in then no longer asks for it.")
         }
-        Section {
-            @Bindable var store = store
-            Toggle("Meeting reminders", isOn: $store.meetingReminders)
-            Toggle("To-do badge on the app icon", isOn: $store.todoBadge)
-            Toggle("Morning summary of to-dos", isOn: $store.morningSummary)
-            if store.morningSummary {
-                DatePicker("At", selection: morningTime, displayedComponents: .hourAndMinute)
-            }
-            LabeledContent("Allowed by the system") { ReminderPermission() }
-        } header: {
-            Text("Notifications")
-        } footer: {
-            note("Five minutes before a meeting that has notes, lães shows them, including notes an AI tool wrote. The badge counts to-dos due today or overdue, and on mornings with any, a notification says how many: numbers only, never what the to-dos say. All are on until you switch them off, on each device.")
-        }
         Section("Week") {
             @Bindable var store = store
             Picker("Week starts on", selection: $store.firstWeekday) {
@@ -151,6 +136,21 @@ struct SettingsView: View {
             Picker("Day ends at", selection: $store.lastHour) {
                 ForEach(13...24, id: \.self) { Text(String(format: "%02d:00", $0)).tag($0) }
             }
+        }
+    }
+
+    @ViewBuilder private var notifications: some View {
+        Section {
+            @Bindable var store = store
+            Toggle("Meeting reminders", isOn: $store.meetingReminders)
+            Toggle("To-do badge on the app icon", isOn: $store.todoBadge)
+            Toggle("Morning summary of to-dos", isOn: $store.morningSummary)
+            if store.morningSummary {
+                DatePicker("At", selection: morningTime, displayedComponents: .hourAndMinute)
+            }
+            LabeledContent("Allowed by the system") { ReminderPermission() }
+        } footer: {
+            note("Five minutes before a meeting that has notes, lães shows them, including notes an AI tool wrote. The badge counts to-dos due today or overdue, and on mornings with any, a notification says how many: numbers only, never what the to-dos say. All are on until you switch them off, on each device.")
         }
     }
 
