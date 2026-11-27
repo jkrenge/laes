@@ -1,4 +1,5 @@
 import BackgroundTasks
+import BoringKit
 import SwiftUI
 
 @main
@@ -7,10 +8,13 @@ struct LaesiOSApp: App {
     @Environment(\.scenePhase) private var scenePhase
     private static let refreshTask = "app.laes.Laes.refresh"   // also in Info.plist
 
+    init() { Reporting.start() }
+
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environment(store)
+                .updatePrompt()   // a newer version on the App Store
                 .tint(Color.brandText)
                 // iOS stops the app in the background: sync when it comes back, and ask to be woken now and then meanwhile.
                 .onChange(of: scenePhase, initial: true) { _, phase in

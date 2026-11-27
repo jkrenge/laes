@@ -121,7 +121,7 @@ struct HelpView: View {
             "Sign Out, in the account menu, also deletes the copy of your data kept on this Mac.",
         ]),
         ("lock.shield", "Your data", [
-            "lães connects only to Microsoft, to sign you in and to read and update your own calendar and tasks. Nothing is sent anywhere else.",
+            "Your calendar and tasks go only to Microsoft, which signs you in and keeps them. The developer of lães gets crash reports and anonymous usage counts, never your data.",
             "The sign-in is stored in your Mac's Keychain. The offline copy is stored in your user Library.",
         ]),
     ]
