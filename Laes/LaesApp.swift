@@ -1,11 +1,13 @@
+import BoringKit
 import SwiftUI
 
 @main
 struct LaesApp: App {
     @State private var store = AppStore()
 
-    #if DEBUG
     init() {
+        Reporting.start()
+        #if DEBUG
         // Launched in the background, macOS sometimes restores the app with no window; open one for the shot.
         guard ProcessInfo.processInfo.arguments.contains("-shot") else { return }
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
@@ -15,13 +17,14 @@ struct LaesApp: App {
                 new.menu?.performActionForItem(at: new.menu!.index(of: new))
             }
         }
+        #endif
     }
-    #endif
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environment(store)
+                .updatePrompt()   // a newer version on the Mac App Store
                 .task { IconDesign.saved?.showInDock() }   // macOS forgets a changed Dock icon when the app quits
                 .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
                     Task { await store.refreshIfStale() }

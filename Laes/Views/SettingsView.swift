@@ -1,3 +1,4 @@
+import BoringKit
 import SwiftUI
 import UserNotifications
 
@@ -33,6 +34,7 @@ struct SettingsView: View {
     }
     @State private var pane: Pane? = .general
     @State private var copiedPrompt = false
+    @State private var showFeedback = false
 
     #if os(iOS)
     @AppStorage("tasksStart") private var tasksStart = TasksStart.lists
@@ -242,11 +244,18 @@ struct SettingsView: View {
             LabeledContent("Version", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "")
             LabeledContent("Copyright", value: "© 2026 Julian Krenge")
         }
+        Section {
+            Button("Send Feedback…") { showFeedback = true }
+                .sheet(isPresented: $showFeedback) { FeedbackView() }
+        } footer: {
+            note("Goes to the developer of lães, with the app version and your device model. Add your email only if you'd like a reply.")
+        }
         Section("Your data") {
-            note("lães talks only to Microsoft, using your own sign-in. Notes, if you turn them on, are files in your own OneDrive. Your calendar, tasks and notes are kept on this device for offline use, and the sign-in is stored in your Keychain. Nothing is sent anywhere else, and signing out removes the local copy.")
+            note("Your calendar, tasks and notes go only to Microsoft, using your own sign-in. Notes, if you turn them on, are files in your own OneDrive. Everything is kept on this device for offline use, and the sign-in is stored in your Keychain. Signing out removes the local copy.")
+            note("lães sends crash reports and anonymous usage counts, such as how often a task is added, to its developer's own server. They hold nothing from your calendar, tasks or notes, and they aren't linked to you or your Microsoft account.")
         }
         Section("Third-party software") {
-            note("lães is built only with Apple's system frameworks and includes no third-party libraries. Icons are Apple's SF Symbols.")
+            note("lães is built with Apple's system frameworks and three open-source libraries for crash reports and usage counts: BoringKit, KSCrash and the Aptabase Swift client, all under the MIT licence. Icons are Apple's SF Symbols.")
         }
         Section("Trademarks") {
             note("lães is an independent app and is not affiliated with or endorsed by Microsoft. Microsoft 365, Outlook and Microsoft To Do are trademarks of the Microsoft group of companies.")
