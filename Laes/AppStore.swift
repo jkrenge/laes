@@ -23,13 +23,22 @@ final class AppStore {
 
     // The private group: hidden everywhere while `showPrivate` is off.
     var showPrivate = UserDefaults.standard.object(forKey: "showPrivate") as? Bool ?? true {
-        didSet { UserDefaults.standard.set(showPrivate, forKey: "showPrivate") }
+        didSet {
+            UserDefaults.standard.set(showPrivate, forKey: "showPrivate")
+            shareSettings()
+        }
     }
     var privateCategories = Set(UserDefaults.standard.stringArray(forKey: "privateCategories") ?? ["Private", "Privat"]) {
-        didSet { UserDefaults.standard.set(privateCategories.sorted(), forKey: "privateCategories") }
+        didSet {
+            UserDefaults.standard.set(privateCategories.sorted(), forKey: "privateCategories")
+            shareSettings()
+        }
     }
     var privateListIDs = Set(UserDefaults.standard.stringArray(forKey: "privateListIDs") ?? []) {
-        didSet { UserDefaults.standard.set(privateListIDs.sorted(), forKey: "privateListIDs") }
+        didSet {
+            UserDefaults.standard.set(privateListIDs.sorted(), forKey: "privateListIDs")
+            shareSettings()
+        }
     }
 
     // Layout preferences; `Calendar.laes` and `WeekRow` read the same defaults keys.
@@ -37,13 +46,20 @@ final class AppStore {
         didSet {
             UserDefaults.standard.set(firstWeekday, forKey: "firstWeekday")
             goToToday()
+            shareSettings()
         }
     }
     var firstHour = UserDefaults.standard.object(forKey: "firstHour") as? Int ?? 7 {
-        didSet { UserDefaults.standard.set(firstHour, forKey: "firstHour") }
+        didSet {
+            UserDefaults.standard.set(firstHour, forKey: "firstHour")
+            shareSettings()
+        }
     }
     var lastHour = UserDefaults.standard.object(forKey: "lastHour") as? Int ?? 20 {
-        didSet { UserDefaults.standard.set(lastHour, forKey: "lastHour") }
+        didSet {
+            UserDefaults.standard.set(lastHour, forKey: "lastHour")
+            shareSettings()
+        }
     }
 
     #if os(macOS)
@@ -390,6 +406,7 @@ final class AppStore {
     var visibleNotes: [Note] {
         if showPrivate { return notes }
         return notes.filter { note in
+            if note.isSettings { return false }   // it names the private lists and categories
             let categories = note.meta("event_categories") != nil ? note.eventCategories
                 : events.first { $0.id == note.eventID }?.categories ?? []
             return !hasCategory(categories, in: privateCategories)
@@ -415,7 +432,8 @@ final class AppStore {
     /// Returns the note's file name, which changes when an untitled note gets its title.
     @discardableResult
     func saveNote(_ note: Note) -> String {
-        guard let old = notes.first(where: { $0.name == note.name }), old.text != note.text else { return note.name }
+        guard !note.isSettings,   // read-only: lães writes it from the settings
+              let old = notes.first(where: { $0.name == note.name }), old.text != note.text else { return note.name }
         var note = note
         // shortcut: only before the first upload, since OneDrive would need a rename after it; a second save racing that upload can leave an "Untitled" copy behind.
         if note.tag.isEmpty, note.name.hasPrefix(untitledNote), let heading = note.heading {
@@ -439,6 +457,7 @@ final class AppStore {
     }
 
     func deleteNote(_ note: Note) async {
+        guard !note.isSettings else { return }   // read-only; it would come back with the next change anyway
         do {
             if isSignedIn, !note.tag.isEmpty { try await GraphClient(auth: auth).deleteNote(name: note.name) }
             notes.removeAll { $0.name == note.name }
@@ -498,10 +517,47 @@ final class AppStore {
             notes = unsent + fresh.filter { file in !unsent.contains { $0.name == file.name } }
             notesError = nil
             persistNotes()
+            // Not changed here since the last upload: the file as OneDrive has it wins, whichever device wrote it.
+            if let note = notes.first(where: \.isSettings), !note.isDirty, let shared = SharedSettings(note) { adopt(shared) }
+            shareSettings()   // writes it the first time, or with list names that changed
         } catch let error as GraphError {
             notesError = "Notes couldn't be loaded from OneDrive: \(error.localizedDescription)"
         } catch {}
         scheduleReminders()
+    }
+
+    // MARK: Settings shared through a note
+
+    @ObservationIgnored private var adoptingSettings = false
+
+    var sharedSettings: SharedSettings {
+        SharedSettings(showPrivate: showPrivate, privateCategories: privateCategories, privateListIDs: privateListIDs,
+                       listOrder: listOrder, firstWeekday: firstWeekday, firstHour: firstHour, lastHour: lastHour)
+    }
+
+    /// Writes the settings note when a shared setting changed here. Needs the OneDrive folder, so not with notes off.
+    private func shareSettings() {
+        guard !adoptingSettings, isSignedIn, notesEnabled else { return }
+        var note = notes.first(where: \.isSettings) ?? Note(name: settingsNoteName, text: "")
+        let text = sharedSettings.text(listNames: Dictionary(taskLists.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first }))
+        guard note.text != text else { return }
+        note.text = text
+        keep(note)
+    }
+
+    /// Takes over the settings another device wrote.
+    private func adopt(_ shared: SharedSettings) {
+        guard shared != sharedSettings else { return }
+        adoptingSettings = true
+        defer { adoptingSettings = false }
+        (showPrivate, privateCategories, privateListIDs) = (shared.showPrivate, shared.privateCategories, shared.privateListIDs)
+        (firstHour, lastHour) = (shared.firstHour, shared.lastHour)
+        if firstWeekday != shared.firstWeekday { firstWeekday = shared.firstWeekday }   // only then: it moves the calendar to today
+        if listOrder != shared.listOrder {
+            UserDefaults.standard.set(shared.listOrder, forKey: "listOrder")
+            taskLists = ordered(taskLists, by: shared.listOrder)
+            persist()
+        }
     }
 
     private func scheduleReminders() {
@@ -557,11 +613,12 @@ final class AppStore {
         }
     }
 
-    /// Reorders the lists as shown (hidden private lists keep to the end). Kept on this device only.
+    /// Reorders the lists as shown (hidden private lists keep to the end). Shared through the settings note.
     func setListOrder(_ shown: [TaskList]) {
         taskLists = shown + taskLists.filter { !shown.contains($0) }
         UserDefaults.standard.set(taskLists.map(\.id), forKey: "listOrder")
         persist()
+        shareSettings()
     }
 
     // MARK: Task edits (applied here at once, then queued for Microsoft)

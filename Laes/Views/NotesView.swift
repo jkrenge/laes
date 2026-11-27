@@ -4,10 +4,11 @@ extension AppStore {
     /// Notes work on sample data, and on an account once the user has allowed the OneDrive folder.
     var notesReady: Bool { !isSignedIn || notesEnabled }
 
-    /// Newest first, or the best matches for a search.
+    /// Newest first with the settings note last, or the best matches for a search.
     func noteRows(matching query: String) -> [NoteHit] {
         if !query.trimmingCharacters(in: .whitespaces).isEmpty { return searchNotes(visibleNotes, query, limit: 50) }
-        return visibleNotes.filter { !$0.isBlank }.sorted { $0.modified > $1.modified }.map { note in
+        let notes = visibleNotes.filter { !$0.isBlank && !$0.isSettings }.sorted { $0.modified > $1.modified }
+        return (notes + visibleNotes.filter(\.isSettings)).map { note in
             let line = note.body.components(separatedBy: "\n").first { !$0.isEmpty && !$0.hasPrefix("# ") } ?? ""
             return NoteHit(note: note, score: 0, snippet: String(line.drop { "#-*+ ".contains($0) }.prefix(200)))
         }
@@ -40,7 +41,11 @@ struct NoteRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(hit.note.title).lineLimit(1)
+            if hit.note.isSettings {
+                Label(hit.note.title, systemImage: "gearshape").lineLimit(1)
+            } else {
+                Text(hit.note.title).lineLimit(1)
+            }
             if let event = hit.note.meta("event_title") {
                 HStack(spacing: 3) { Image(systemName: "calendar"); Text(event) }
                     .font(.caption).foregroundStyle(Color.brandText).lineLimit(1)
@@ -82,6 +87,7 @@ struct NoteEditor: View {
     /// One styled editor for reading and writing; the buttons float over its top, and the text scrolls under them.
     private var mac: some View {
         MarkdownEditor(text: $draft, isEditing: $isEditing, model: editor)
+            .disabled(note.isSettings)   // read-only; the buttons over it stay usable
             .overlay(alignment: .topLeading) {
                 if let event = note.meta("event_title") {
                     Label([event, note.eventStart?.formatted(date: .abbreviated, time: .shortened)].compactMap(\.self).joined(separator: " · "),
@@ -141,7 +147,7 @@ struct NoteEditor: View {
                         }
                         .contentShape(Rectangle())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.accessoryBar)   // native rollover highlight
                     .focusable(false)
                     .help("\(format.title) (⌘\(String(format.key).uppercased()))")
                     .accessibilityLabel(format.title)
@@ -193,7 +199,7 @@ struct NoteEditor: View {
                         .glassCapsule()
                         .transition(.opacity.combined(with: .move(edge: .bottom)))
                 }
-                if !isEditing {
+                if !isEditing, !note.isSettings {
                     Button(action: edit) {
                         Label("Edit this note", systemImage: "pencil")
                             .font(.body.weight(.semibold))
@@ -241,8 +247,10 @@ struct NoteEditor: View {
                 .help("Not yet saved to OneDrive").accessibilityLabel("Not yet saved to OneDrive")
         }
         #if os(macOS)   // on iPhone: the floating edit button, and hiding the keyboard finishes
-        Button(isEditing ? "Done" : "Edit", systemImage: isEditing ? "checkmark" : "pencil") { isEditing.toggle() }
-            .help(isEditing ? "Done editing (Esc)" : "Edit the note, or double-click it")
+        if !note.isSettings {
+            Button(isEditing ? "Done" : "Edit", systemImage: isEditing ? "checkmark" : "pencil") { isEditing.toggle() }
+                .help(isEditing ? "Done editing (⌘S or Esc)" : "Edit the note, or double-click it")
+        }
         #endif
         Button(copied ? "Copied" : "Copy Note", systemImage: copied ? "checkmark" : "doc.on.doc") {
             #if os(macOS)
@@ -258,8 +266,10 @@ struct NoteEditor: View {
             }
         }
         .help("Copy the whole note as Markdown")
-        Button("Delete", systemImage: "trash", role: .destructive) { confirmDelete = true }
-            .tint(Color.overdue)
+        if !note.isSettings {
+            Button("Delete", systemImage: "trash", role: .destructive) { confirmDelete = true }
+                .tint(Color.overdue)
+        }
     }
 
     private func edit() {

@@ -90,3 +90,12 @@ import Testing
     #expect(meetings[0].event.title == "Board meeting" && meetings[0].event.start.timeIntervalSince(later) < 1)
     #expect(meetings[1].event.title == "New title" && meetings[1].event.start == later + 7200)
 }
+
+@Test func settingsNoteReadsBackWhatItWrote() throws {
+    let settings = SharedSettings(showPrivate: false, privateCategories: ["Private", "Family"], privateListIDs: ["L2"],
+                                  listOrder: ["L2", "L1"], firstWeekday: 2, firstHour: 8, lastHour: 19)
+    let note = Note(name: settingsNoteName, text: settings.text(listNames: ["L1": "Work", "L2": "Home"]))
+    #expect(note.isSettings && SharedSettings(note) == settings)
+    #expect(note.body.contains("List order: Home, Work"))
+    #expect(SharedSettings(Note(name: settingsNoteName, text: "# edited by hand")) == nil)
+}

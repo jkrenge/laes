@@ -104,12 +104,38 @@ import AppKit
         #expect(started && view.isEditable && abs(view.selectedRange().location - 14) <= 1)
     }
 
+    @Test func commandSFinishesAndCommandMinusStrikes() throws {
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 400, height: 200), styleMask: [.titled], backing: .buffered, defer: false)
+        let view = editor("a word")
+        window.contentView = view
+        window.makeFirstResponder(view)
+        view.setSelectedRange(NSRange(location: 2, length: 4))
+        func press(_ key: String) throws -> Bool {
+            try view.performKeyEquivalent(with: #require(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: .command, timestamp: 0,
+                windowNumber: window.windowNumber, context: nil, characters: key, charactersIgnoringModifiers: key, isARepeat: false, keyCode: 0)))
+        }
+        #expect(try press("-") && view.string == "a ~~word~~")
+        var ended = false
+        view.onEndEditing = { ended = true }
+        #expect(try press("s") && ended && view.string == "a ~~word~~")
+    }
+
     @Test func boldIsBoldAndItsMarksAreDimmed() throws {
         let storage = NSTextStorage(string: "a **b** c")
         MarkdownStyler.style(storage)
         let font = try #require(storage.attribute(.font, at: 4, effectiveRange: nil) as? NSFont)
         #expect(font.fontDescriptor.symbolicTraits.contains(.bold))
         #expect(storage.attribute(.foregroundColor, at: 2, effectiveRange: nil) as? NSColor == NSColor.tertiaryLabelColor)
+    }
+
+    @Test func marksAndToDoBoxesAreTagged() {
+        let storage = NSTextStorage(string: "- [ ] a **b**\n- [x] c")
+        MarkdownStyler.style(storage)
+        #expect(storage.attribute(.markdownSyntax, at: 0, effectiveRange: nil) != nil)   // the dash
+        #expect(storage.attribute(.markdownSyntax, at: 8, effectiveRange: nil) != nil)   // **
+        #expect(storage.attribute(.markdownSyntax, at: 10, effectiveRange: nil) == nil)  // b
+        #expect(storage.attribute(.markdownTask, at: 3, effectiveRange: nil) as? Bool == false)
+        #expect(storage.attribute(.markdownTask, at: 17, effectiveRange: nil) as? Bool == true)
     }
 
     @Test func linksPutPlaceholdersAndTabBetweenThem() {

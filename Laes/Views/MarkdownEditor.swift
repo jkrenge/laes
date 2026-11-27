@@ -25,7 +25,7 @@ enum NoteFormat: CaseIterable, Identifiable {
         case .bold: "b"
         case .italic: "i"
         case .underline: "u"
-        case .strikethrough: "s"
+        case .strikethrough: "-"
         case .bulletList: "l"
         case .numberedList: "o"
         case .taskList: "t"
@@ -110,11 +110,12 @@ struct MarkdownEditor: NSViewRepresentable {
         textView.textContainer?.widthTracksTextView = true
         textView.delegate = context.coordinator
         textView.textStorage?.delegate = context.coordinator
+        textView.layoutManager?.delegate = context.coordinator
         textView.string = text
         textView.isEditable = isEditing
         textView.setAccessibilityLabel("Note")
         let coordinator = context.coordinator
-        textView.onStartEditing = { coordinator.parent.isEditing = true }
+        textView.onStartEditing = { if coordinator.parent.isEnabled { coordinator.parent.isEditing = true } }
         textView.onEndEditing = { coordinator.parent.isEditing = false }
         textView.onCommandHeld = { held in
             coordinator.parent.model.commandHeld = held
@@ -156,7 +157,7 @@ struct MarkdownEditor: NSViewRepresentable {
 
     func makeCoordinator() -> Coordinator { Coordinator(parent: self) }
 
-    final class Coordinator: NSObject, NSTextViewDelegate, NSTextStorageDelegate {
+    final class Coordinator: NSObject, NSTextViewDelegate, NSTextStorageDelegate, NSLayoutManagerDelegate {
         var parent: MarkdownEditor
         weak var textView: MarkdownTextView?
         init(parent: MarkdownEditor) { self.parent = parent }
@@ -179,6 +180,21 @@ struct MarkdownEditor: NSViewRepresentable {
             if editedMask.contains(.editedCharacters) { MarkdownStyler.style(storage) }
         }
 
+        /// Out of editing, the Markdown marks take no glyphs: **b** reads as a bold b.
+        func layoutManager(_ manager: NSLayoutManager, shouldGenerateGlyphs glyphs: UnsafePointer<CGGlyph>,
+                           properties: UnsafePointer<NSLayoutManager.GlyphProperty>, characterIndexes: UnsafePointer<Int>,
+                           font: NSFont, forGlyphRange range: NSRange) -> Int {
+            guard textView?.isEditable == false, let storage = manager.textStorage else { return 0 }
+            var hidden = Array(UnsafeBufferPointer(start: properties, count: range.length)), changed = false
+            for i in hidden.indices where storage.attribute(.markdownSyntax, at: characterIndexes[i], effectiveRange: nil) != nil {
+                hidden[i] = .null
+                changed = true
+            }
+            guard changed else { return 0 }
+            manager.setGlyphs(glyphs, properties: hidden, characterIndexes: characterIndexes, font: font, forGlyphRange: range)
+            return range.length
+        }
+
         func updatePill() {
             guard let textView, textView.isEditable else {
                 parent.model.anchor = nil
@@ -193,6 +209,38 @@ struct MarkdownEditor: NSViewRepresentable {
 }
 
 final class MarkdownTextView: NSTextView {
+    override var isEditable: Bool {
+        didSet {   // the marks show only while editing: lay the glyphs out again
+            guard oldValue != isEditable, let manager = layoutManager else { return }
+            let all = NSRange(location: 0, length: (string as NSString).length)
+            manager.invalidateGlyphs(forCharacterRange: all, changeInLength: 0, actualCharacterRange: nil)
+            manager.invalidateLayout(forCharacterRange: all, actualCharacterRange: nil)
+            needsDisplay = true
+        }
+    }
+
+    /// A to-do's [ ] or [x] (its text drawn clear) gets a box drawn over it.
+    override func draw(_ dirtyRect: NSRect) {
+        super.draw(dirtyRect)
+        guard let manager = layoutManager, let container = textContainer, let storage = textStorage else { return }
+        let visible = manager.characterRange(forGlyphRange: manager.glyphRange(forBoundingRect: visibleRect, in: container), actualGlyphRange: nil)
+        let color = NSColor(Color.brandText)
+        storage.enumerateAttribute(.markdownTask, in: visible) { value, range, _ in
+            guard let done = value as? Bool else { return }
+            let glyphs = manager.glyphRange(forCharacterRange: range, actualCharacterRange: nil)
+            let line = manager.boundingRect(forGlyphRange: glyphs, in: container)
+            let font = storage.attribute(.font, at: range.location, effectiveRange: nil) as? NSFont ?? MarkdownStyler.font
+            let config = NSImage.SymbolConfiguration(pointSize: font.pointSize, weight: .regular).applying(.init(paletteColors: [color]))
+            guard let box = NSImage(systemSymbolName: done ? "checkmark.square" : "square", accessibilityDescription: nil)?
+                .withSymbolConfiguration(config) else { return }
+            let origin = textContainerOrigin
+            let baseline = manager.lineFragmentRect(forGlyphAt: glyphs.location, effectiveRange: nil).minY + manager.location(forGlyphAt: glyphs.location).y
+            let rect = NSRect(x: origin.x + line.midX - box.size.width / 2, y: origin.y + baseline - font.capHeight / 2 - box.size.height / 2,
+                              width: box.size.width, height: box.size.height)
+            box.draw(in: rect)
+        }
+    }
+
     var onStartEditing: (() -> Void)?
     var onEndEditing: (() -> Void)?
     var onCommandHeld: ((Bool) -> Void)?
@@ -298,9 +346,10 @@ final class MarkdownTextView: NSTextView {
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
         guard isEditable, window?.firstResponder === self,
               event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command,
-              let key = event.charactersIgnoringModifiers?.lowercased().first,
-              let format = NoteFormat.allCases.first(where: { $0.key == key }) else { return super.performKeyEquivalent(with: event) }
+              let key = event.charactersIgnoringModifiers?.lowercased().first else { return super.performKeyEquivalent(with: event) }
         holdTimer?.invalidate()
+        if key == "s" { onEndEditing?(); return true }   // ⌘S: done editing, which saves
+        guard let format = NoteFormat.allCases.first(where: { $0.key == key }) else { return super.performKeyEquivalent(with: event) }
         apply(format)
         return true
     }
@@ -458,6 +507,7 @@ enum MarkdownStyler {
     private static let code = pattern(#"(`)([^`\n]+)(`)"#)
     private static let link = pattern(#"(\[)([^\]\n]*)(\]\([^)\n]*\))"#)
     private static let list = pattern(#"^ *([-*+] \[[ xX]\]|[-*+]|\d+\.)(?= )"#)
+    private static let task = pattern(#"^ *([-*+] )(\[([ xX])\])(?= )"#)
 
     static func style(_ storage: NSTextStorage) {
         let text = storage.string, all = NSRange(location: 0, length: storage.length)
@@ -468,7 +518,9 @@ enum MarkdownStyler {
         func each(_ regex: NSRegularExpression, _ body: (NSTextCheckingResult) -> Void) {
             regex.enumerateMatches(in: text, range: all) { match, _, _ in if let match { body(match) } }
         }
-        func dim(_ range: NSRange) { storage.addAttribute(.foregroundColor, value: NSColor.tertiaryLabelColor, range: range) }
+        func dim(_ range: NSRange) {   // a mark: dimmed while editing, gone otherwise
+            storage.addAttributes([.foregroundColor: NSColor.tertiaryLabelColor, .markdownSyntax: true], range: range)
+        }
         func trait(_ trait: NSFontTraitMask, _ range: NSRange) {
             storage.enumerateAttribute(.font, in: range) { value, part, _ in
                 storage.addAttribute(.font, value: NSFontManager.shared.convert(value as? NSFont ?? font, toHaveTrait: trait), range: part)
@@ -499,6 +551,20 @@ enum MarkdownStyler {
             dim($0.range(at: 1)); dim($0.range(at: 3))
         }
         each(list) { storage.addAttribute(.foregroundColor, value: NSColor(Color.brandText), range: $0.range(at: 1)) }
+        each(task) {
+            storage.addAttribute(.markdownSyntax, value: true, range: $0.range(at: 1))
+            storage.addAttributes([.foregroundColor: NSColor.clear, .markdownTask: (text as NSString).substring(with: $0.range(at: 3)) != " "],
+                                  range: $0.range(at: 2))
+            // An x is wider than a space: kerned to its width, done and open to-dos start their text at the same place.
+            let x = (text as NSString).substring(with: $0.range(at: 3)) as NSString
+            storage.addAttribute(.kern, value: (" " as NSString).size(withAttributes: [.font: font]).width - x.size(withAttributes: [.font: font]).width,
+                                 range: $0.range(at: 3))
+        }
     }
+}
+
+extension NSAttributedString.Key {
+    static let markdownSyntax = NSAttributedString.Key("laes.markdownSyntax")   // a mark, hidden out of editing
+    static let markdownTask = NSAttributedString.Key("laes.markdownTask")   // a to-do box: true when done
 }
 #endif
