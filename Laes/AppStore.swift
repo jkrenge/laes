@@ -1,3 +1,4 @@
+import BoringKit
 import Foundation
 import Network
 import Observation
@@ -159,6 +160,7 @@ final class AppStore {
         do {
             try await auth.signIn()
             isSignedIn = true
+            Aptabase.shared.trackEvent("signed_in")
             (events, tasks, taskLists, checklists, categoryColors, notes) = ([], [], [], [:], [:], [])   // drop the sample data
             await refresh()
         } catch {
@@ -261,12 +263,14 @@ final class AppStore {
                 // Microsoft refused it (for example the task was deleted elsewhere). Retrying can't help:
                 // drop the edit, say so, and reload what is really there.
                 errorMessage = "A change couldn't be saved: \(error.localizedDescription)"
+                Reporting.failed("change", error)
                 wantsFetch = true
             } catch {
                 if error is URLError {
                     isOffline = true
                 } else {
                     errorMessage = error.localizedDescription
+                    Reporting.failed("change", error)
                     isSignedIn = auth.hasSession   // an expired session clears the Keychain
                 }
                 return false
@@ -308,6 +312,7 @@ final class AppStore {
             isOffline = true
         } catch {
             errorMessage = error.localizedDescription
+            Reporting.failed("sync", error)
             lastFetchFailed = true
             isSignedIn = auth.hasSession
         }
@@ -342,6 +347,7 @@ final class AppStore {
         do {
             if isSignedIn { event = try await GraphClient(auth: auth).createEvent(title: title, start: start, end: end) }
             events.append(event)
+            Aptabase.shared.trackEvent("meeting_created")
             return event
         } catch {
             errorMessage = "The meeting couldn't be created: \(error.localizedDescription)"
@@ -378,6 +384,7 @@ final class AppStore {
         notesEnabled = true
         do {
             try await auth.signIn()
+            Aptabase.shared.trackEvent("notes_enabled")
             await refresh()
         } catch {
             notesEnabled = false
@@ -409,6 +416,7 @@ final class AppStore {
         var note = Note(name: name, text: body.hasPrefix("# ") ? body : title.isEmpty ? "# " + body : "# \(title)\n\n\(body)")
         note.link(to: event)
         keep(note)
+        Aptabase.shared.trackEvent("note_created", with: ["from_meeting": event != nil])
         return note
     }
 
@@ -575,6 +583,7 @@ final class AppStore {
         let task = TodoTask(id: temporaryIDPrefix + UUID().uuidString, title: title, listName: list.name, listID: list.id, due: day)
         tasks.append(task)
         enqueue(.create(title: title, due: day), for: task)
+        Aptabase.shared.trackEvent("task_added", with: ["has_due": day != nil])
         return task
     }
 
@@ -583,6 +592,7 @@ final class AppStore {
         checklists[task.id] = nil
         if task.recurrence != nil { refetchAfterCompleting.insert(task.id) }
         enqueue(.complete, for: task)
+        Aptabase.shared.trackEvent("task_completed")
     }
 
     /// Moves a task to another list. Sent at once, not queued: Microsoft gives the moved task a new id.

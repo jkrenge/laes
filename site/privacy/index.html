@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Privacy policy — lães (say “lanes”)</title>
-<meta name="description" content="What lães does with your data: it talks only to Microsoft with your own sign-in, keeps a copy on your device, and sends nothing to its developer.">
+<meta name="description" content="What lães does with your data: your calendar, tasks and notes go only to Microsoft with your own sign-in, a copy stays on your device, and the developer gets only crash reports and anonymous usage counts.">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0e0e13" media="(prefers-color-scheme: dark)">
@@ -36,7 +36,7 @@
   <div class="doc-head">
     <p class="eyebrow">Privacy policy</p>
     <h1>Your data stays between you and Microsoft</h1>
-    <p class="lede">lães shows your Microsoft 365 calendar, tasks and notes. It talks only to Microsoft, with your own sign-in, and sends nothing to its developer. This page explains the details. Last updated 24 November 2026.</p>
+    <p class="lede">lães shows your Microsoft 365 calendar, tasks and notes. Your calendar, tasks and notes go only to Microsoft, with your own sign-in, and never reach its developer. The app does send crash reports and anonymous usage counts to the developer. This page explains the details. Last updated 26 November 2026.</p>
   </div>
 
   <section id="who" aria-labelledby="who-title">
@@ -66,11 +66,21 @@
     </ul>
     <p>Signing out removes the local copy and the sign-in.</p>
 
+    <h3>Crash reports, usage counts and feedback</h3>
+    <p>To find and fix problems, lães on the Mac and the iPhone sends the following to a server run by its developer and hosted by Cloudflare:</p>
+    <ul>
+      <li>Crash reports: where in the app the failure happened, with your device model, system version and app version.</li>
+      <li>Usage counts: that the app was opened, and that an action such as adding a task or creating a note happened, with your device model, system version, language setting and app version. No titles, text, names, dates or account details.</li>
+      <li>Errors the app didn't expect: the kind of error and its status code, not its message.</li>
+      <li>Feedback you send from Settings, with the app version and device model, and your email address only if you type one in.</li>
+    </ul>
+    <p>Each installation gets a random number that isn't connected to your Microsoft account, your name or your email address, and the server keeps only a scrambled form of it. When the app first starts, the server asks Apple to confirm that the request comes from a genuine Apple device. Your IP address is used to limit how many requests one device can send and isn't stored with the reports; Cloudflare keeps request logs for a few days. There is no advertising identifier.</p>
+    <p>This is done with three open-source libraries: <a href="https://github.com/jkrenge/boring-ass-app-kit">BoringKit</a>, <a href="https://github.com/kstenerud/KSCrash">KSCrash</a> and the <a href="https://github.com/aptabase/aptabase-swift">Aptabase Swift client</a>. Everything else in lães is Apple's system frameworks.</p>
+
     <h3>What lães does not do</h3>
     <ul>
-      <li>It has no analytics, no tracking, no advertising and no crash reporting.</li>
-      <li>It has no server of its own: your calendar, tasks and notes never reach its developer.</li>
-      <li>It includes no third-party code, only Apple's system frameworks.</li>
+      <li>Your calendar, tasks and notes never reach its developer.</li>
+      <li>It has no advertising, and it doesn't track you across other apps or websites.</li>
     </ul>
 
     <h3>Reminders and background refresh</h3>

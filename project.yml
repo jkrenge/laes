@@ -15,11 +15,18 @@ settings:
     GENERATE_INFOPLIST_FILE: YES
     MARKETING_VERSION: "1.0"
     CURRENT_PROJECT_VERSION: "2"
+packages:
+  # Crash reports, usage counts and feedback, sent to lães's own Cloudflare Worker.
+  BoringKit:
+    url: https://github.com/jkrenge/boring-ass-app-kit
+    minorVersion: 0.2.1
 targets:
   Laes:
     type: application
     platform: macOS
     sources: [Laes]
+    dependencies:
+      - package: BoringKit
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.laes.Laes
@@ -47,6 +54,8 @@ targets:
       - path: Laes
         excludes: [LaesApp.swift, MCPServer.swift, Assets.xcassets, Views/ContentView.swift, Views/WelcomeView.swift, Laes.entitlements, container-migration.plist]
       - LaesiOS
+    dependencies:
+      - package: BoringKit
     info:
       path: LaesiOS/Info.plist
       properties:

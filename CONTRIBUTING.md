@@ -17,7 +17,8 @@ Use the **Idea** form. lães deliberately does a few things one way (two weeks, 
 1. Open an issue first for anything bigger than a small fix, so we can agree on the approach.
 2. Set up the project as described in the [README](README.md#build-it-yourself).
 3. Keep changes small and focused. Follow the style around you:
-   - Swift 6 with strict concurrency; SwiftUI, and only Apple's frameworks (no third-party dependencies).
+   - Swift 6 with strict concurrency; SwiftUI, and only Apple's frameworks. The one dependency is BoringKit, for crash reports, usage counts and feedback.
+   - Usage counts go through `Aptabase.shared.trackEvent` with fixed names and numbers or flags only, and unexpected errors through `Reporting.failed`. Never send titles, text, names, IDs or error messages.
    - Light mode first, dark mode supported; text meets WCAG AA contrast; controls work with the keyboard and VoiceOver.
    - Comments explain *why*, in plain sentences. Interface text is short and specific.
 4. Add or update a test for logic you change (`LaesTests/`), and run the tests:

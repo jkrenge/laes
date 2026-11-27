@@ -77,7 +77,7 @@ Then replace `clientID`.
 
 ## Privacy
 
-lães talks only to Microsoft, with your own sign-in. Your calendar, tasks and notes are cached on your device for offline use, the sign-in and the AI token are kept in your Keychain, and nothing is sent anywhere else. There's no analytics or tracking. Signing out removes the local copy.
+Your calendar, tasks and notes go only to Microsoft, with your own sign-in. They are cached on your device for offline use, the sign-in and the AI token are kept in your Keychain, and none of it is sent anywhere else. The app sends crash reports, anonymous usage counts and feedback to the developer's own server through [BoringKit](https://github.com/jkrenge/boring-ass-app-kit); a build signed by another Apple team sends nothing, because that server only accepts the author's team. Signing out removes the local copy.
 
 ## Contributing and security
 
