@@ -9,8 +9,8 @@ extension AppStore {
         if !query.trimmingCharacters(in: .whitespaces).isEmpty { return searchNotes(visibleNotes, query, limit: 50) }
         let notes = visibleNotes.filter { !$0.isBlank && !$0.isSettings }.sorted { $0.modified > $1.modified }
         return (notes + visibleNotes.filter(\.isSettings)).map { note in
-            let line = note.body.components(separatedBy: "\n").first { !$0.isEmpty && !$0.hasPrefix("# ") } ?? ""
-            return NoteHit(note: note, score: 0, snippet: String(line.drop { "#-*+ ".contains($0) }.prefix(200)))
+            let line = note.body.components(separatedBy: "\n").lazy.filter { !$0.hasPrefix("#") }.map(plainMarkdown).first { !$0.isEmpty } ?? ""
+            return NoteHit(note: note, score: 0, snippet: String(line.prefix(200)))
         }
     }
 }
@@ -42,7 +42,12 @@ struct NoteRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             if hit.note.isSettings {
-                Label(hit.note.title, systemImage: "gearshape").lineLimit(1)
+                HStack(spacing: 5) {
+                    Image(systemName: "gearshape.fill").font(.caption).accessibilityHidden(true)
+                    Text(hit.note.title)
+                }
+                .foregroundStyle(Color.subtle)
+                .lineLimit(1)
             } else {
                 Text(hit.note.title).lineLimit(1)
             }
@@ -50,8 +55,10 @@ struct NoteRow: View {
                 HStack(spacing: 3) { Image(systemName: "calendar"); Text(event) }
                     .font(.caption).foregroundStyle(Color.brandText).lineLimit(1)
             }
-            if !hit.snippet.isEmpty {
-                Text(hit.snippet).font(.caption).foregroundStyle(Color.subtle).lineLimit(1)
+            let todos = hit.note.isSettings ? nil : hit.note.todoSummary
+            if todos != nil || !hit.snippet.isEmpty {
+                (Text(todos ?? "").foregroundStyle(Color.brandText) + Text(todos != nil && !hit.snippet.isEmpty ? " · " : "") + Text(hit.snippet))
+                    .font(.caption).foregroundStyle(Color.subtle).lineLimit(1)
             }
         }
         .padding(.vertical, 2)
@@ -66,11 +73,9 @@ struct NoteEditor: View {
     @Environment(\.dismiss) private var dismiss   // back to the list after a delete on iPhone; nothing on Mac
     let note: Note
     @State private var draft = ""
-    @State private var selection: TextSelection?
     @State private var isEditing = false
     @State private var confirmDelete = false
     @State private var copied = false
-    @FocusState private var isFocused: Bool
     #if os(macOS)
     @State private var editor = MarkdownEditorModel()
     #endif
@@ -119,6 +124,7 @@ struct NoteEditor: View {
             }
             .onDisappear { save() }
             .onChange(of: isEditing) { _, editing in if !editing { finish() } }
+            .onChange(of: draft) { if !isEditing, draft != note.body { save() } }   // a to-do ticked while reading
             .onChange(of: note.text) {
                 if !isEditing { draft = note.body }   // changed elsewhere, for example by an AI tool
             }
@@ -175,14 +181,10 @@ struct NoteEditor: View {
                     .lineLimit(1)
             }
             if isEditing {
-                TextEditor(text: $draft, selection: $selection)
-                    .focused($isFocused)
-                    .font(.body.monospaced())
-                    .scrollContentBackground(.hidden)
-                    .accessibilityLabel("Note in Markdown")
+                MarkdownSourceEditor(text: $draft, selection: $selection, isFocused: $isFocused)
             } else {
                 ScrollView {
-                    Text(renderMarkdown(draft))
+                    MarkdownReader(text: draft, onToggle: note.isSettings ? nil : { draft = toggleTask(in: draft, line: $0) })
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -229,6 +231,7 @@ struct NoteEditor: View {
             if note.isBlank { edit() }   // a new note: type the title right away
         }
         .onDisappear { save() }
+        .onChange(of: draft) { if !isEditing, draft != note.body { save() } }   // a to-do ticked while reading
         .onChange(of: note.text) {
             if !isEditing { draft = note.body }   // changed elsewhere, for example by an AI tool
         }
@@ -276,14 +279,6 @@ struct NoteEditor: View {
         }
     }
 
-    private func edit() {
-        isEditing = true
-        DispatchQueue.main.async {   // the editor exists one runloop turn later
-            isFocused = true
-            selection = TextSelection(insertionPoint: draft.endIndex)
-        }
-    }
-
     private func finish() {
         isEditing = false
         let name = save()
@@ -299,7 +294,17 @@ struct NoteEditor: View {
 
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var sizeClass
+    @State private var selection = NSRange(location: 0, length: 0)   // UTF-16, as the editor counts
+    @State private var isFocused = false
     private enum BarMenu { case style, list }
+
+    private func edit() {
+        isEditing = true
+        DispatchQueue.main.async {   // the editor exists one runloop turn later
+            isFocused = true
+            selection = NSRange(location: (draft as NSString).length, length: 0)
+        }
+    }
     @State private var menu: BarMenu?
 
     /// Floats just above the keyboard. Style and list open a small pop-up over the bar; bar and keyboard stay.
@@ -363,12 +368,13 @@ struct NoteEditor: View {
 
     private func apply(_ action: MarkdownAction) {
         var range = draft.count..<draft.count
-        if case .selection(let chosen) = selection?.indices, chosen.upperBound <= draft.endIndex {
+        if let chosen = Range(selection, in: draft) {
             range = draft.distance(from: draft.startIndex, to: chosen.lowerBound)..<draft.distance(from: draft.startIndex, to: chosen.upperBound)
         }
         let result = action.apply(to: draft, selection: range)
         draft = result.text
-        selection = TextSelection(insertionPoint: draft.index(draft.startIndex, offsetBy: result.selection.lowerBound))
+        let cursor = draft.index(draft.startIndex, offsetBy: result.selection.lowerBound)
+        selection = NSRange(cursor..<cursor, in: draft)
         isFocused = true
     }
     #endif

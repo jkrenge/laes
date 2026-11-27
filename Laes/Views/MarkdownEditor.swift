@@ -111,10 +111,12 @@ struct MarkdownEditor: NSViewRepresentable {
         textView.delegate = context.coordinator
         textView.textStorage?.delegate = context.coordinator
         textView.layoutManager?.delegate = context.coordinator
+        context.coordinator.textView = textView   // before the text, which is styled for reading or editing
         textView.string = text
         textView.isEditable = isEditing
         textView.setAccessibilityLabel("Note")
         let coordinator = context.coordinator
+        textView.onToggleTask = { coordinator.textDidChange(Notification(name: NSText.didChangeNotification)) }
         textView.onStartEditing = { if coordinator.parent.isEnabled { coordinator.parent.isEditing = true } }
         textView.onEndEditing = { coordinator.parent.isEditing = false }
         textView.onCommandHeld = { held in
@@ -123,7 +125,6 @@ struct MarkdownEditor: NSViewRepresentable {
             coordinator.updatePill()
         }
         model.textView = textView
-        coordinator.textView = textView
         scroll.documentView = textView
         scroll.contentView.postsBoundsChangedNotifications = true
         NotificationCenter.default.addObserver(coordinator, selector: #selector(Coordinator.scrolled),
@@ -177,7 +178,7 @@ struct MarkdownEditor: NSViewRepresentable {
         @objc func scrolled() { updatePill() }
 
         func textStorage(_ storage: NSTextStorage, didProcessEditing editedMask: NSTextStorageEditActions, range: NSRange, changeInLength delta: Int) {
-            if editedMask.contains(.editedCharacters) { MarkdownStyler.style(storage) }
+            if editedMask.contains(.editedCharacters) { MarkdownStyler.style(storage, editing: textView?.isEditable ?? false) }
         }
 
         /// Out of editing, the Markdown marks take no glyphs: **b** reads as a bold b.
@@ -210,8 +211,9 @@ struct MarkdownEditor: NSViewRepresentable {
 
 final class MarkdownTextView: NSTextView {
     override var isEditable: Bool {
-        didSet {   // the marks show only while editing: lay the glyphs out again
-            guard oldValue != isEditable, let manager = layoutManager else { return }
+        didSet {   // the marks show only while editing: style and lay the glyphs out again
+            guard oldValue != isEditable, let manager = layoutManager, let storage = textStorage else { return }
+            MarkdownStyler.style(storage, editing: isEditable)
             let all = NSRange(location: 0, length: (string as NSString).length)
             manager.invalidateGlyphs(forCharacterRange: all, changeInLength: 0, actualCharacterRange: nil)
             manager.invalidateLayout(forCharacterRange: all, actualCharacterRange: nil)
@@ -241,6 +243,7 @@ final class MarkdownTextView: NSTextView {
         }
     }
 
+    var onToggleTask: (() -> Void)?
     var onStartEditing: (() -> Void)?
     var onEndEditing: (() -> Void)?
     var onCommandHeld: ((Bool) -> Void)?
@@ -253,14 +256,36 @@ final class MarkdownTextView: NSTextView {
 
     // MARK: Reading and editing
 
-    /// A double-click anywhere starts editing right there; single clicks still select, for copying.
+    /// A double-click anywhere starts editing right there; single clicks still select, for copying, or tick a to-do.
     override func mouseDown(with event: NSEvent) {
+        if !isEditable, isSelectable, event.clickCount == 1, let box = taskBox(at: convert(event.locationInWindow, from: nil)) {
+            return toggleTask(box)
+        }
         guard !isEditable, isSelectable, event.clickCount == 2 else { return super.mouseDown(with: event) }
         let index = characterIndexForInsertion(at: convert(event.locationInWindow, from: nil))
         isEditable = true
         setSelectedRange(NSRange(location: index, length: 0))
         window?.makeFirstResponder(self)
         onStartEditing?()
+    }
+
+    /// The [ ] or [x] of the to-do box under a point.
+    func taskBox(at point: NSPoint) -> NSRange? {
+        guard let manager = layoutManager, let container = textContainer, let storage = textStorage, storage.length > 0 else { return nil }
+        let local = NSPoint(x: point.x - textContainerOrigin.x, y: point.y - textContainerOrigin.y)
+        let index = manager.characterIndex(for: local, in: container, fractionOfDistanceBetweenInsertionPoints: nil)
+        var box = NSRange()
+        guard index < storage.length, storage.attribute(.markdownTask, at: index, effectiveRange: &box) != nil else { return nil }
+        let rect = manager.boundingRect(forGlyphRange: manager.glyphRange(forCharacterRange: box, actualCharacterRange: nil), in: container)
+        return rect.insetBy(dx: -4, dy: -2).contains(local) ? box : nil
+    }
+
+    /// Ticks a to-do, or unticks it, without editing: [ ] becomes [x].
+    func toggleTask(_ box: NSRange) {
+        let mark = NSRange(location: box.location + 1, length: 1)
+        textStorage?.replaceCharacters(in: mark, with: (string as NSString).substring(with: mark) == " " ? "x" : " ")
+        needsDisplay = true
+        onToggleTask?()
     }
 
     /// Escape.
@@ -508,8 +533,10 @@ enum MarkdownStyler {
     private static let link = pattern(#"(\[)([^\]\n]*)(\]\([^)\n]*\))"#)
     private static let list = pattern(#"^ *([-*+] \[[ xX]\]|[-*+]|\d+\.)(?= )"#)
     private static let task = pattern(#"^ *([-*+] )(\[([ xX])\])(?= )"#)
+    private static let item = pattern(#"^( *)([-*+] \[[ xX]\] |[-*+] |\d+\. )"#)
 
-    static func style(_ storage: NSTextStorage) {
+    /// `editing`: the marks show, so a list item's wrapped lines line up after more of them.
+    static func style(_ storage: NSTextStorage, editing: Bool = true) {
         let text = storage.string, all = NSRange(location: 0, length: storage.length)
         let paragraph = NSMutableParagraphStyle()
         paragraph.lineSpacing = 3
@@ -551,14 +578,40 @@ enum MarkdownStyler {
             dim($0.range(at: 1)); dim($0.range(at: 3))
         }
         each(list) { storage.addAttribute(.foregroundColor, value: NSColor(Color.brandText), range: $0.range(at: 1)) }
+        // A list item's wrapped lines start where its text does, past the marker (a to-do's "- " is hidden out of editing).
+        each(item) { match in
+            let marker = (text as NSString).substring(with: match.range(at: 2))
+            let shown = marker.hasSuffix("] ") ? (editing ? "- [ ] " : "[ ] ") : marker
+            let hanging = paragraph.mutableCopy() as! NSMutableParagraphStyle
+            hanging.headIndent = (String(repeating: " ", count: match.range(at: 1).length) + shown as NSString).size(withAttributes: [.font: font]).width
+            storage.addAttribute(.paragraphStyle, value: hanging, range: (text as NSString).paragraphRange(for: match.range))
+        }
         each(task) {
-            storage.addAttribute(.markdownSyntax, value: true, range: $0.range(at: 1))
+            if editing {
+                storage.addAttribute(.markdownSyntax, value: true, range: $0.range(at: 1))
+            } else {
+                // The "- " takes no room rather than no glyphs: a line starting with hidden glyphs gets its wrapped lines' indent.
+                for i in 0..<$0.range(at: 1).length {
+                    let char = NSRange(location: $0.range(at: 1).location + i, length: 1)
+                    let width = ((text as NSString).substring(with: char) as NSString).size(withAttributes: [.font: font]).width
+                    storage.addAttributes([.foregroundColor: NSColor.clear, .kern: -width], range: char)
+                }
+            }
             storage.addAttributes([.foregroundColor: NSColor.clear, .markdownTask: (text as NSString).substring(with: $0.range(at: 3)) != " "],
                                   range: $0.range(at: 2))
             // An x is wider than a space: kerned to its width, done and open to-dos start their text at the same place.
             let x = (text as NSString).substring(with: $0.range(at: 3)) as NSString
             storage.addAttribute(.kern, value: (" " as NSString).size(withAttributes: [.font: font]).width - x.size(withAttributes: [.font: font]).width,
                                  range: $0.range(at: 3))
+            guard x != " " else { return }
+            // Done: the rest of the line greyed out and struck through.
+            let line = (text as NSString).lineRange(for: $0.range)
+            let start = $0.range(at: 2).location + $0.range(at: 2).length
+            let rest = NSRange(location: start, length: line.location + line.length - start - ((text as NSString).substring(with: line).hasSuffix("\n") ? 1 : 0))
+            storage.addAttribute(.strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: rest)
+            storage.enumerateAttribute(.foregroundColor, in: rest) { color, part, _ in
+                if color as? NSColor == NSColor.labelColor { storage.addAttribute(.foregroundColor, value: NSColor.secondaryLabelColor, range: part) }
+            }
         }
     }
 }

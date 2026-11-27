@@ -138,6 +138,35 @@ import AppKit
         #expect(storage.attribute(.markdownTask, at: 17, effectiveRange: nil) as? Bool == true)
     }
 
+    @Test func listItemsWrapUnderTheirTextAndDoneToDosAreStruckThrough() throws {
+        let storage = NSTextStorage(string: "- [x] done\n- [ ] open\nplain")
+        MarkdownStyler.style(storage, editing: false)
+        let reading = try #require(storage.attribute(.paragraphStyle, at: 13, effectiveRange: nil) as? NSParagraphStyle)
+        MarkdownStyler.style(storage, editing: true)
+        let editing = try #require(storage.attribute(.paragraphStyle, at: 13, effectiveRange: nil) as? NSParagraphStyle)
+        #expect(reading.headIndent > 0 && editing.headIndent > reading.headIndent)   // "[ ] " out of editing, "- [ ] " in it
+        #expect((storage.attribute(.paragraphStyle, at: 23, effectiveRange: nil) as? NSParagraphStyle)?.headIndent == 0)
+        #expect(storage.attribute(.strikethroughStyle, at: 7, effectiveRange: nil) != nil)
+        #expect(storage.attribute(.foregroundColor, at: 7, effectiveRange: nil) as? NSColor == NSColor.secondaryLabelColor)
+        #expect(storage.attribute(.strikethroughStyle, at: 18, effectiveRange: nil) == nil)
+    }
+
+    @Test func aClickOnABoxTicksTheToDoWithoutEditing() {
+        let view = MarkdownTextView(usingTextLayoutManager: false)
+        view.frame = NSRect(x: 0, y: 0, width: 300, height: 100)
+        view.textStorage?.delegate = nil
+        view.string = "- [ ] call"
+        view.isEditable = false
+        var toggled = false
+        view.onToggleTask = { toggled = true }
+        let box = NSRange(location: 2, length: 3)
+        if let storage = view.textStorage { MarkdownStyler.style(storage, editing: false) }
+        view.toggleTask(box)
+        #expect(view.string == "- [x] call" && toggled)
+        view.toggleTask(box)
+        #expect(view.string == "- [ ] call")
+    }
+
     @Test func linksPutPlaceholdersAndTabBetweenThem() {
         let view = editor("see |")
         view.apply(.link)

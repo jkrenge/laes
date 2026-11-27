@@ -189,11 +189,16 @@ final class AuthService: NSObject, ASWebAuthenticationPresentationContextProvidi
 
 /// Secrets for this app in the Keychain, readable after the first unlock (background sync) and never synced off the device.
 enum Keychain {
+    /// Tests run inside the app: they don't touch the real sign-in, and don't wait on macOS asking to allow the
+    /// Keychain to a newly signed build (which hangs them before they start).
+    static let isTesting = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+
     private static func query(_ account: String) -> [String: Any] {
         [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: "app.laes.Laes", kSecAttrAccount as String: account]
     }
 
     static func read(_ account: String) -> String? {
+        guard !isTesting else { return nil }
         var query = query(account)
         query[kSecReturnData as String] = true
         query[kSecMatchLimit as String] = kSecMatchLimitOne
@@ -205,6 +210,7 @@ enum Keychain {
     /// nil deletes. Returns whether it was saved.
     @discardableResult
     static func write(_ value: String?, account: String) -> Bool {
+        guard !isTesting else { return false }
         SecItemDelete(query(account) as CFDictionary)
         guard let value else { return true }
         var item = query(account)

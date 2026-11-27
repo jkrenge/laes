@@ -73,7 +73,7 @@
     <h3>On the Mac</h3>
     <ul>
       <li>The window shows two weeks, Saturday to Friday: the top row is the first week, the bottom row the week after. Each day lists its tasks on top and its meetings below.</li>
-      <li>The switch in the toolbar moves between Weeks, Tasks and Notes. ⌘L goes to the next one.</li>
+      <li>The switch in the toolbar moves between Weeks, Tasks and Notes. ⌘1, ⌘2 and ⌘3 go straight to one; ⌘L goes to the next.</li>
       <li>Today (⌘T) jumps back to the current week. The arrows (⌘← and ⌘→) move one week at a time.</li>
       <li>Click a meeting to see its time, place, category, status and attendees. From there you can join an online meeting, add a note or open the meeting in Outlook. Meetings from Outlook can't be changed in lães.</li>
       <li>An all-day event tints its whole day column, unless it is marked free, cancelled or declined.</li>
@@ -89,6 +89,7 @@
       <table class="keys">
         <thead><tr><th scope="col">Keys</th><th scope="col">What they do</th></tr></thead>
         <tbody>
+          <tr><td><kbd>⌘1</kbd> <kbd>⌘2</kbd> <kbd>⌘3</kbd></td><td>Weeks, Tasks or Notes</td></tr>
           <tr><td><kbd>⌘L</kbd></td><td>Switch to the next view: Weeks, Tasks, Notes</td></tr>
           <tr><td><kbd>⌘T</kbd></td><td>Go to this week</td></tr>
           <tr><td><kbd>⌘←</kbd> <kbd>⌘→</kbd></td><td>Previous or next week</td></tr>
@@ -122,6 +123,7 @@
       <li>Click empty space under a day to add a task for that day. On a full day, scroll to “Add task” at the end of the list. New tasks go to your default To Do list.</li>
       <li>Completing a repeating task brings up its next occurrence a few seconds later.</li>
       <li>A task note is Markdown. A note with formatting from Outlook can only be edited in Outlook.</li>
+      <li>The app icon shows how many tasks are due today or overdue, and on mornings with any, a notification at 9:00 says how many. Both show numbers only, never what the tasks say. Both are on from the start: switch either off, or pick another time, in Settings › General › Notifications; each device has its own setting.</li>
     </ul>
     <h3>In the Tasks view</h3>
     <ul>
@@ -159,10 +161,10 @@
     <h2 id="notes-title">Notes</h2>
     <ul>
       <li>Notes are Markdown files in a OneDrive folder only lães uses. The first line, starting with #, is the title. Microsoft asks you to allow the folder once.</li>
-      <li>New Note starts an empty note with the cursor in the title. On the Mac, double-click a note to edit it right where you clicked; ⌘S, Esc or Done stops and saves. While you edit, bold looks bold with its <code>**</code> still there, dimmed; when you stop, the marks go and to-dos show as boxes.</li>
+      <li>New Note starts an empty note with the cursor in the title. On the Mac, double-click a note to edit it right where you clicked; ⌘S, Esc or Done stops and saves. While you edit, bold looks bold with its <code>**</code> still there, dimmed; when you stop, the marks go and to-dos show as boxes. Click or tap a box to tick the to-do without editing.</li>
       <li>On the Mac, Return continues a list (an empty item ends it), and <code>*</code>, <code>_</code>, <code>`</code> and <code>~</code> come in pairs. Select text, or hold ⌘ for a moment, to see the formatting buttons and their shortcuts: ⌘B bold, ⌘I italic, ⌘U underline, ⌘− strikethrough, ⌘L list, ⌘O numbered list, ⌘T to-do list, ⌘K link. A new link starts as <code>[label](url)</code>: type the label, press Tab, type the address.</li>
-      <li>To write a note for a meeting, click the meeting and choose Add Note. Five minutes before it starts, lães reminds you of its notes.</li>
-      <li>Search looks through the full text of every note. Notes written by an AI tool or on another device appear after the next refresh.</li>
+      <li>To write a note for a meeting, click the meeting and choose Add Note. Five minutes before it starts, lães reminds you of its notes, unless you switch meeting reminders off in Settings › General › Notifications.</li>
+      <li>Search looks through the full text of every note and forgives typos. The list shows how many of a note’s to-dos are done. Notes written by an AI tool or on another device appear after the next refresh.</li>
       <li>Copy Note copies the whole note as Markdown. Delete removes the file from your OneDrive folder.</li>
       <li>On iPhone, a bar above the keyboard adds headings, text styles, lists and indents. Its link button picks up the address you just copied.</li>
     </ul>

@@ -29,11 +29,12 @@ final class NoteReminders: NSObject, UNUserNotificationCenterDelegate {
     /// Replaces all scheduled reminders. Asks for permission the first time there is something to remind of.
     func schedule(_ meetings: [(event: CalendarEvent, notes: [Note])]) async {
         let center = UNUserNotificationCenter.current()
-        center.removeAllPendingNotificationRequests()
+        let ours = await center.pendingNotificationRequests().map(\.identifier).filter { !$0.hasPrefix(TodoAlerts.prefix) }
+        center.removePendingNotificationRequests(withIdentifiers: ours)
         // iOS keeps at most 64 pending notifications; the next sync schedules the ones after these.
         let upcoming = meetings.filter { $0.event.start.addingTimeInterval(-Self.lead) > .now && !$0.notes.isEmpty }
             .sorted { $0.event.start < $1.event.start }.prefix(30)
-        guard !upcoming.isEmpty, (try? await center.requestAuthorization(options: [.alert, .sound])) == true else { return }
+        guard !upcoming.isEmpty, (try? await center.requestAuthorization(options: [.alert, .sound, .badge])) == true else { return }
         for (event, notes) in upcoming {
             let content = UNMutableNotificationContent()
             content.title = event.title
@@ -46,9 +47,10 @@ final class NoteReminders: NSObject, UNUserNotificationCenterDelegate {
         }
     }
 
-    // Shown even while the app is in front: that is where it usually is before a meeting.
+    // Shown even while the app is in front: that is where it usually is before a meeting. The midnight badge
+    // updates have no text to show.
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
-        [.banner, .sound]
+        notification.request.content.title.isEmpty ? [.badge] : [.banner, .sound, .badge]
     }
 
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {

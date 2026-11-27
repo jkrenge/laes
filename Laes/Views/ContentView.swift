@@ -84,7 +84,17 @@ struct ContentView: View {
                 Label("Notes", systemImage: "note.text").tag(MainView.notes)
             }
             .pickerStyle(.segmented)
-            .help("Switch between the weeks, all tasks and notes (⌘L)")
+            .help("Switch between the weeks (⌘1), all tasks (⌘2) and notes (⌘3), or to the next (⌘L)")
+        }
+        ToolbarItem(placement: .navigation) {
+            HStack {
+                Button("Weeks") { mode = .weeks }.keyboardShortcut("1")
+                Button("Tasks") { mode = .tasks }.keyboardShortcut("2")
+                Button("Notes") { mode = .notes }.keyboardShortcut("3")
+            }
+            .frame(width: 0, height: 0)
+            .opacity(0)
+            .accessibilityHidden(true)
         }
         ToolbarItem(placement: .navigation) {
             Button("Next View") {

@@ -127,9 +127,18 @@ struct SettingsView: View {
             note("Notes are Markdown files in a OneDrive folder only lães uses. Switch this off if your account has no OneDrive or your organisation doesn't allow it; signing in then no longer asks for it.")
         }
         Section {
-            LabeledContent("Meeting reminders") { ReminderPermission() }
+            @Bindable var store = store
+            Toggle("Meeting reminders", isOn: $store.meetingReminders)
+            Toggle("To-do badge on the app icon", isOn: $store.todoBadge)
+            Toggle("Morning summary of to-dos", isOn: $store.morningSummary)
+            if store.morningSummary {
+                DatePicker("At", selection: morningTime, displayedComponents: .hourAndMinute)
+            }
+            LabeledContent("Allowed by the system") { ReminderPermission() }
+        } header: {
+            Text("Notifications")
         } footer: {
-            note("Five minutes before a meeting that has notes, lães shows them in a notification, including notes an AI tool wrote for it.")
+            note("Five minutes before a meeting that has notes, lães shows them, including notes an AI tool wrote. The badge counts to-dos due today or overdue, and on mornings with any, a notification says how many: numbers only, never what the to-dos say. All are on until you switch them off, on each device.")
         }
         Section("Week") {
             @Bindable var store = store
@@ -143,6 +152,12 @@ struct SettingsView: View {
                 ForEach(13...24, id: \.self) { Text(String(format: "%02d:00", $0)).tag($0) }
             }
         }
+    }
+
+    /// The summary's time of day, as the date picker wants it.
+    private var morningTime: Binding<Date> {
+        Binding(get: { Calendar.current.date(byAdding: .minute, value: store.morningMinute, to: Calendar.current.startOfDay(for: .now))! },
+                set: { let at = Calendar.current.dateComponents([.hour, .minute], from: $0); store.morningMinute = at.hour! * 60 + at.minute! })
     }
 
     @ViewBuilder private var privateGroup: some View {
@@ -286,7 +301,7 @@ private struct ReminderPermission: View {
             case .notDetermined:
                 Button("Allow") {
                     Task {
-                        _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])
+                        _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
                         await refresh()
                     }
                 }

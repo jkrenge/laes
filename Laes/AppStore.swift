@@ -6,7 +6,7 @@ import Observation
 @Observable
 final class AppStore {
     var events: [CalendarEvent] = []
-    var tasks: [TodoTask] = []
+    var tasks: [TodoTask] = [] { didSet { scheduleTodoAlerts() } }
     var taskLists: [TaskList] = []
     /// Outlook category name -> "#RRGGBB"
     var categoryColors: [String: String] = [:]
@@ -62,6 +62,20 @@ final class AppStore {
             shareSettings()
         }
     }
+    // Notifications are on until switched off, and belong to each device, so they aren't in the shared settings.
+    var meetingReminders = UserDefaults.standard.object(forKey: "meetingReminders") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(meetingReminders, forKey: "meetingReminders"); scheduleReminders() }
+    }
+    var todoBadge = UserDefaults.standard.object(forKey: "todoBadge") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(todoBadge, forKey: "todoBadge"); scheduleTodoAlerts() }
+    }
+    var morningSummary = UserDefaults.standard.object(forKey: "morningSummary") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(morningSummary, forKey: "morningSummary"); scheduleTodoAlerts() }
+    }
+    var morningMinute = UserDefaults.standard.object(forKey: "morningMinute") as? Int ?? 9 * 60 {   // minutes after midnight
+        didSet { UserDefaults.standard.set(morningMinute, forKey: "morningMinute"); scheduleTodoAlerts() }
+    }
+    @ObservationIgnored private var todoAlerts: Task<Void, Never>?
 
     #if os(macOS)
     /// The local MCP server for AI tools (off unless the user turns it on).
@@ -568,9 +582,20 @@ final class AppStore {
         }
     }
 
+    /// Once things settle: a sync sets the tasks several times in a row.
+    private func scheduleTodoAlerts() {
+        todoAlerts?.cancel()
+        todoAlerts = Task {
+            try? await Task.sleep(for: .seconds(1))
+            guard !Task.isCancelled else { return }
+            // Sample data counts nothing, and asks for no permission.
+            await TodoAlerts.schedule(tasks, badge: isSignedIn && todoBadge, morning: isSignedIn && morningSummary ? morningMinute : nil)
+        }
+    }
+
     private func scheduleReminders() {
         guard isSignedIn else { return }   // no reminders for sample data
-        let meetings = NoteReminders.meetings(for: visibleNotes, loaded: events)
+        let meetings = meetingReminders ? NoteReminders.meetings(for: visibleNotes, loaded: events) : []   // none clears them
         Task { await NoteReminders.shared.schedule(meetings) }
     }
 

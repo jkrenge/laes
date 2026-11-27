@@ -9,6 +9,7 @@ enum Reporting {
 
     /// First thing at launch: anything that crashes before it goes unseen.
     static func start() {
+        guard !Keychain.isTesting else { return }   // no crash handler or counts from test runs
         BoringKit.start(api: api)
         Aptabase.shared.trackEvent("app_opened")
     }

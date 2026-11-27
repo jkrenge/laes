@@ -40,6 +40,18 @@ extension Note {
     var title: String { heading ?? meta("title") ?? String(name.dropLast(name.hasSuffix(".md") ? 3 : 0)) }
     /// Nothing typed yet.
     var isBlank: Bool { body.trimmingCharacters(in: CharacterSet(charactersIn: "# \n")).isEmpty }
+    /// "3 to-dos", "1 of 3 done", "All 3 done"; nil without to-dos.
+    var todoSummary: String? {
+        let done = body.components(separatedBy: "\n").compactMap { line -> Bool? in
+            if case .task(let done) = MarkdownLine(line).kind { return done }
+            return nil
+        }
+        let ticked = done.filter(\.self).count, all = done.count
+        if all == 0 { return nil }
+        if ticked == 0 { return all == 1 ? "1 to-do" : "\(all) to-dos" }
+        if ticked == all { return all == 1 ? "1 to-do, done" : "All \(all) done" }
+        return "\(ticked) of \(all) done"
+    }
     var eventID: String? { meta("event") }
     var eventCategories: [String] { meta("event_categories")?.components(separatedBy: ", ") ?? [] }
     var eventStart: Date? { meta("event_start").flatMap { try? Date($0, strategy: .iso8601) } }
@@ -128,22 +140,59 @@ private func words(_ text: String) -> [String] {
     text.lowercased().split { !$0.isLetter && !$0.isNumber }.map(String.init)
 }
 
-/// Full-text search ranked with BM25; a query word also matches words it starts ("meet" finds "meeting"),
-/// and the title counts double.
+/// Edits (a letter added, missing, changed, or two swapped) that turn `a` into `b`, if at most `limit`.
+private func editDistance(_ a: [Character], _ b: [Character], limit: Int) -> Int? {
+    guard !a.isEmpty, !b.isEmpty, abs(a.count - b.count) <= limit else { return nil }
+    var before = [Int](), previous = Array(0...b.count)
+    for i in 1...a.count {
+        var current = [i] + Array(repeating: 0, count: b.count)
+        for j in 1...b.count {
+            current[j] = min(previous[j] + 1, current[j - 1] + 1, previous[j - 1] + (a[i - 1] == b[j - 1] ? 0 : 1))
+            if i > 1, j > 1, a[i - 1] == b[j - 2], a[i - 2] == b[j - 1] { current[j] = min(current[j], before[j - 2] + 1) }
+        }
+        (before, previous) = (previous, current)
+    }
+    return previous[b.count] <= limit ? previous[b.count] : nil
+}
+
+/// How well a word in a note matches a query word: 1 if it starts with it ("meet" finds "meeting"), less for
+/// a typo ("meetnig", "pricng"): one edit from four letters on, two from eight. 0 if not at all.
+func fuzzyMatch(_ word: String, _ term: String) -> Double {
+    if word.hasPrefix(term) { return 1 }
+    let limit = term.count >= 8 ? 2 : term.count >= 4 ? 1 : 0
+    guard limit > 0 else { return 0 }
+    let w = Array(word), t = Array(term)
+    // Against the word's start, a little longer than the query word or as long, so "meetnig" finds "meetings";
+    // or the whole word if it is shorter.
+    let lengths = w.count < t.count ? [w.count] : Array(t.count...min(t.count + limit, w.count))
+    let best = lengths.compactMap { editDistance(Array(w.prefix($0)), t, limit: limit) }.min()
+    return best.map { 0.6 - 0.2 * Double(max($0, 1) - 1) } ?? 0
+}
+
+/// Full-text search ranked with BM25. A query word matches words it starts and, a little lower, near-misses
+/// (see `fuzzyMatch`); the title counts double.
 /// shortcut: keyword search over notes held in memory, no embeddings; add a vector index if meaning-based search is needed.
 func searchNotes(_ notes: [Note], _ query: String, limit: Int = 10) -> [NoteHit] {
     let terms = Set(words(query))
     guard !terms.isEmpty, !notes.isEmpty else { return [] }
     let docs = notes.map { words($0.title + " " + $0.title + " " + $0.body) }
     let average = max(1, Double(docs.map(\.count).reduce(0, +)) / Double(docs.count))
-    func matches(_ word: String, _ term: String) -> Bool { word.hasPrefix(term) }
+    // Each different word once, not every word of every note.
+    let vocabulary = Set(docs.joined())
+    let weights = Dictionary(uniqueKeysWithValues: terms.map { term in
+        (term, Dictionary(uniqueKeysWithValues: vocabulary.compactMap { word in
+            let weight = fuzzyMatch(word, term)
+            return weight > 0 ? (word, weight) : nil
+        }))
+    })
+    func matches(_ word: String, _ term: String) -> Bool { weights[term]?[word] != nil }
     let containing = Dictionary(uniqueKeysWithValues: terms.map { term in
         (term, Double(docs.filter { $0.contains { matches($0, term) } }.count))
     })
     let hits = zip(notes, docs).compactMap { note, doc -> NoteHit? in
         var score = 0.0
         for term in terms {
-            let frequency = Double(doc.filter { matches($0, term) }.count)
+            let frequency = doc.reduce(0.0) { $0 + (weights[term]?[$1] ?? 0) }
             guard frequency > 0 else { continue }
             let idf = log(1 + (Double(docs.count) - containing[term]! + 0.5) / (containing[term]! + 0.5))
             score += idf * frequency * 2.2 / (frequency + 1.2 * (0.25 + 0.75 * Double(doc.count) / average))
@@ -152,7 +201,7 @@ func searchNotes(_ notes: [Note], _ query: String, limit: Int = 10) -> [NoteHit]
         let lines = note.body.components(separatedBy: "\n").filter { !$0.hasPrefix("# ") }   // the title is shown anyway
         let line = lines.first { line in words(line).contains { word in terms.contains { matches(word, $0) } } }
             ?? lines.first { !$0.isEmpty } ?? ""
-        return NoteHit(note: note, score: score, snippet: String(line.trimmingCharacters(in: .whitespaces).prefix(200)))
+        return NoteHit(note: note, score: score, snippet: String(plainMarkdown(line).prefix(200)))
     }
     return Array(hits.sorted { $0.score > $1.score }.prefix(limit))
 }

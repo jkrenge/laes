@@ -99,3 +99,28 @@ import Testing
     #expect(note.body.contains("List order: Home, Work"))
     #expect(SharedSettings(Note(name: settingsNoteName, text: "# edited by hand")) == nil)
 }
+
+@Test func noteSearchForgivesTypos() {
+    let notes = [
+        Note(name: "a.md", text: "# Pricing meeting\n\nTiers for Q2."),
+        Note(name: "b.md", text: "# Groceries\n\nMilk, eggs."),
+    ]
+    #expect(searchNotes(notes, "pricng").map(\.note.name) == ["a.md"])     // a letter missing
+    #expect(searchNotes(notes, "meetnig").map(\.note.name) == ["a.md"])    // two swapped
+    #expect(searchNotes(notes, "grocereis").map(\.note.name) == ["b.md"])
+    #expect(searchNotes(notes, "eggz").map(\.note.name) == ["b.md"])
+    #expect(searchNotes(notes, "xyz").isEmpty)                             // too short to guess at
+    #expect(fuzzyMatch("meeting", "meet") > fuzzyMatch("meeting", "meet".replacingOccurrences(of: "t", with: "y")))
+}
+
+@Test func notePreviewsReadPlainAndCountToDos() {
+    #expect(plainMarkdown("- [ ] **Call** [Ana](https://example.com) <u>now</u>") == "Call Ana now")
+    #expect(plainMarkdown("  12. *one*") == "one")
+    #expect(Note(name: "a.md", text: "# A\nplain").todoSummary == nil)
+    #expect(Note(name: "a.md", text: "- [ ] a\n- [ ] b").todoSummary == "2 to-dos")
+    #expect(Note(name: "a.md", text: "- [x] a\n  - [ ] b\n* [X] c").todoSummary == "2 of 3 done")
+    #expect(Note(name: "a.md", text: "- [x] a\n- [X] b").todoSummary == "All 2 done")
+    #expect(toggleTask(in: "x\n- [ ] a\n- [X] b", line: 1) == "x\n- [x] a\n- [X] b")
+    #expect(toggleTask(in: "x\n- [ ] a\n- [X] b", line: 2) == "x\n- [ ] a\n- [ ] b")
+    #expect(toggleTask(in: "x", line: 0) == "x")
+}

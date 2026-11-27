@@ -79,3 +79,14 @@ import Foundation
     #expect(event.matches("") && event.matches("peter 1:1") && event.matches("cafe muller") && event.matches("ana lopes"))
     #expect(!event.matches("peter budget"))
 }
+
+@Test func toDoAlertsCountTodayAndOverdue() {
+    let calendar = Calendar.laes, today = calendar.startOfDay(for: .now)
+    let day = { calendar.date(byAdding: .day, value: $0, to: today)! }
+    let tasks = [day(-2), day(0), day(0), day(1), nil].enumerated().map { TodoTask(id: "\($0)", title: "t", listName: "L", due: $1) }
+    #expect(TodoAlerts.count(tasks, on: today) == (today: 2, overdue: 1))
+    #expect(TodoAlerts.count(tasks, on: day(1)) == (today: 1, overdue: 3))   // tomorrow, today's are overdue too
+    #expect(TodoAlerts.summary((today: 2, overdue: 1)) == "2 to-dos due today, 1 overdue")
+    #expect(TodoAlerts.summary((today: 1, overdue: 0)) == "1 to-do due today")
+    #expect(TodoAlerts.summary((today: 0, overdue: 3)) == "3 to-dos are overdue")
+}
