@@ -215,8 +215,12 @@ struct NoteEditor: View {
         .onChange(of: isFocused) { _, focused in
             if !focused, isEditing, menu == nil { finish() }   // keyboard hidden: back to the formatted note
         }
-        .toolbar { ToolbarItemGroup(placement: .topBarTrailing) { controls } }
-        .toolbar(.hidden, for: .tabBar)   // room for the note, and nothing under the formatting bar
+        .toolbar {
+            ToolbarItemGroup(placement: .topBarTrailing) { controls }
+            if sizeClass == .regular { AppToolbarItems() }   // iPad: settings and the eye after the note's buttons, the eye last
+        }
+        // iPhone: room for the note, and nothing under the formatting bar. iPad: the bar is on top, out of the way.
+        .toolbar(sizeClass == .regular ? .automatic : .hidden, for: .tabBar)
         .safeAreaInset(edge: .bottom) {
             if isEditing, isFocused || menu != nil { formatBar }   // only while the keyboard is up
         }
@@ -294,6 +298,7 @@ struct NoteEditor: View {
     }
 
     #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var sizeClass
     private enum BarMenu { case style, list }
     @State private var menu: BarMenu?
 

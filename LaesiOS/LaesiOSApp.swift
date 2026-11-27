@@ -48,9 +48,6 @@ struct RootView: View {
             Tab("Notes", systemImage: "note.text", value: 2) {
                 NotesScreen()
             }
-            Tab("Settings", systemImage: "gearshape", value: 3) {
-                SettingsView()
-            }
         }
         .onChange(of: store.openNote, initial: true) {
             if store.openNote != nil { tab = 2 }   // NotesScreen then opens it
@@ -74,26 +71,35 @@ struct RootView: View {
 }
 
 extension View {
-    /// The controls every main screen has: sync state and the private toggle. Account and settings are their own tab.
+    /// The controls every main screen has, at the top right: sync state, settings, and the private toggle last.
     func appToolbar() -> some View { modifier(AppToolbar()) }
 }
 
 private struct AppToolbar: ViewModifier {
-    @Environment(AppStore.self) private var store
-
     func body(content: Content) -> some View {
-        content.toolbar {
-            ToolbarItemGroup(placement: .topBarTrailing) {
-                if store.isOffline || !store.pending.isEmpty {
-                    Image(systemName: store.isOffline ? "wifi.slash" : "arrow.up.circle")
-                        .foregroundStyle(Color.subtle)
-                        .accessibilityLabel(store.isOffline ? "Offline, \(store.pending.count) changes to send" : "Sending changes")
-                } else if store.isSyncing {
-                    ProgressView()
-                }
-                Button { store.showPrivate.toggle() } label: {
-                    Label(store.showPrivate ? "Hide Private" : "Show Private", systemImage: store.showPrivate ? "eye" : "eye.slash")
-                }
+        content.toolbar { AppToolbarItems() }
+    }
+}
+
+/// Sync state, settings, then the private toggle, which stays the rightmost item. A screen with buttons of its own
+/// at the top right puts these after them.
+struct AppToolbarItems: ToolbarContent {
+    @Environment(AppStore.self) private var store
+    @State private var showsSettings = false
+
+    var body: some ToolbarContent {
+        ToolbarItemGroup(placement: .topBarTrailing) {
+            if store.isOffline || !store.pending.isEmpty {
+                Image(systemName: store.isOffline ? "wifi.slash" : "arrow.up.circle")
+                    .foregroundStyle(Color.subtle)
+                    .accessibilityLabel(store.isOffline ? "Offline, \(store.pending.count) changes to send" : "Sending changes")
+            } else if store.isSyncing {
+                ProgressView()
+            }
+            Button("Settings", systemImage: "gearshape") { showsSettings = true }
+                .sheet(isPresented: $showsSettings) { SettingsView() }
+            Button { store.showPrivate.toggle() } label: {
+                Label(store.showPrivate ? "Hide Private" : "Show Private", systemImage: store.showPrivate ? "eye" : "eye.slash")
             }
         }
     }

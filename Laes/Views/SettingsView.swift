@@ -36,6 +36,7 @@ struct SettingsView: View {
 
     #if os(iOS)
     @AppStorage("tasksStart") private var tasksStart = TasksStart.lists
+    @Environment(\.dismiss) private var dismiss   // shown as a sheet from the gear
 
     var body: some View {
         NavigationStack {
@@ -52,6 +53,7 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
         }
     }
 

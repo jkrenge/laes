@@ -3,49 +3,101 @@ import SwiftUI
 /// Where the Tasks tab opens, set in Settings › Behavior.
 enum TasksStart: String { case lists, dueNow }
 
-/// Views and lists; tapping one pushes its tasks.
+/// Views and lists. On iPhone tapping one pushes its tasks, and a task opens as a drawer. On iPad the lists,
+/// the chosen list's tasks and the chosen task's details sit side by side, a third of the width each.
 struct TasksScreen: View {
     @Environment(AppStore.self) private var store
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var listEdit: ListEdit?
     @State private var showOrderNote = false
     @State private var path: [TaskSource] = []
+    @State private var source: TaskSource?   // iPad: the open list
+    @State private var task: TodoTask?   // iPad: the open task
+    @State private var visibility = NavigationSplitViewVisibility.all
     @AppStorage("tasksStart") private var start = TasksStart.lists
     @AppStorage("plannedFilter") private var planned = PlannedFilter.dueNow
 
     var body: some View {
+        if sizeClass == .regular { columns } else { stack }
+    }
+
+    private var stack: some View {
         NavigationStack(path: $path) {
-            List {
-                Section {
-                    row("Planned", "calendar", .planned)
-                    row("Important", "star", .important)
-                    row("All", "tray.full", .all)
-                    ForEach(store.visibleLists.filter(\.isBuiltIn)) { row($0.name, $0.icon, .list($0.id)) }
-                }
-                Section("Lists") {
-                    ForEach(store.visibleLists.filter { !$0.isBuiltIn }) { list in
-                        NavigationLink(value: TaskSource.list(list.id)) {
-                            Text(list.name).badge(store.tasks(in: .list(list.id)).count)
-                        }
-                        .swipeActions { ListActions(list: list, edit: $listEdit) }
-                    }
-                    .onMove { from, to in
-                        var shown = store.visibleLists.filter { !$0.isBuiltIn }
-                        shown.move(fromOffsets: from, toOffset: to)
-                        store.setListOrder(shown)
-                        showOrderNote = true
-                    }
-                    if showOrderNote { OrderNote(isShown: $showOrderNote) }
-                    Button("New List", systemImage: "plus") { listEdit = .new }
-                }
-            }
-            .modifier(ListEditor(edit: $listEdit))
-            .navigationTitle(store.isSignedIn ? "Tasks" : "Tasks (sample)")
-            .navigationDestination(for: TaskSource.self) { TaskListScreen(source: $0) }
-            .refreshable { await store.refresh() }
-            .appToolbar()
+            lists(List { rows })
+                .navigationDestination(for: TaskSource.self) { TaskListScreen(source: $0) }
+                .appToolbar()
         }
         .onChange(of: start, initial: true) {
             if start == .dueNow { (planned, path) = (.dueNow, [.planned]) } else { path = [] }
+        }
+    }
+
+    private var columns: some View {
+        GeometryReader { geo in
+            let third = geo.size.width / 3
+            NavigationSplitView(columnVisibility: $visibility) {
+                lists(List(selection: $source) { rows })
+                    .navigationSplitViewColumnWidth(third)
+                    .toolbar(removing: .sidebarToggle)   // the lists always stay
+            } content: {
+                Group {
+                    if let source {
+                        TaskListScreen(source: source, opened: $task).id(source)
+                    } else {
+                        Text("Select a list").foregroundStyle(Color.subtle)
+                    }
+                }
+                .navigationSplitViewColumnWidth(third)
+            } detail: {
+                Group {
+                    // The stored task, so edits made in the details show in it.
+                    if let opened = task, let current = store.tasks.first(where: { $0.id == opened.id || $0.id == store.adopted[opened.id] }) {
+                        ScrollView { TaskDetails(task: current, close: { task = nil }).padding(20) }
+                            .id(opened.id)   // fresh state per task, as in the drawer
+                    } else {
+                        Text("Select a task").foregroundStyle(Color.subtle)
+                    }
+                }
+                .appToolbar()   // the eye at the top right, as in Calendar and Notes
+            }
+            .navigationSplitViewStyle(.balanced)
+            .onChange(of: visibility) { visibility = .all }   // iPadOS hides the first column on its own in some sizes
+        }
+        .onChange(of: start, initial: true) {
+            if start == .dueNow { (planned, source) = (.dueNow, .planned) } else if source == nil { source = .planned }
+        }
+        .onChange(of: source) { task = nil }
+    }
+
+    private func lists(_ list: some View) -> some View {
+        list
+            .modifier(ListEditor(edit: $listEdit))
+            .navigationTitle(store.isSignedIn ? "Tasks" : "Tasks (sample)")
+            .refreshable { await store.refresh() }
+    }
+
+    @ViewBuilder private var rows: some View {
+        Section {
+            row("Planned", "calendar", .planned)
+            row("Important", "star", .important)
+            row("All", "tray.full", .all)
+            ForEach(store.visibleLists.filter(\.isBuiltIn)) { row($0.name, $0.icon, .list($0.id)) }
+        }
+        Section("Lists") {
+            ForEach(store.visibleLists.filter { !$0.isBuiltIn }) { list in
+                NavigationLink(value: TaskSource.list(list.id)) {
+                    Text(list.name).badge(store.tasks(in: .list(list.id)).count)
+                }
+                .swipeActions { ListActions(list: list, edit: $listEdit) }
+            }
+            .onMove { from, to in
+                var shown = store.visibleLists.filter { !$0.isBuiltIn }
+                shown.move(fromOffsets: from, toOffset: to)
+                store.setListOrder(shown)
+                showOrderNote = true
+            }
+            if showOrderNote { OrderNote(isShown: $showOrderNote) }
+            Button("New List", systemImage: "plus") { listEdit = .new }
         }
     }
 
@@ -60,6 +112,7 @@ struct TasksScreen: View {
 struct TaskListScreen: View {
     @Environment(AppStore.self) private var store
     let source: TaskSource
+    var opened: Binding<TodoTask?>?   // iPad: the task opens beside the list instead of in a drawer
     @AppStorage("plannedFilter") private var planned = PlannedFilter.dueNow   // the last one used
     @State private var draft = ""
     @State private var ignored: Set<String> = []   // words in the draft the user said aren't a date or a star
@@ -82,7 +135,9 @@ struct TaskListScreen: View {
                 }
                 // One flat list with the list's name in each row: sections per list cost too much space on a phone.
                 ForEach(tasks) { task in
-                    TaskListRow(task: task, today: today, showsList: !isSingleList, isSelected: false) { selected = task }
+                    TaskListRow(task: task, today: today, showsList: !isSingleList, isSelected: opened?.wrappedValue?.id == task.id) {
+                        if let opened { opened.wrappedValue = task } else { selected = task }
+                    }
                         .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
                 }
                 if tasks.isEmpty {
@@ -100,8 +155,10 @@ struct TaskListScreen: View {
                         ForEach(TaskSort.allCases, id: \.self) { Text($0.rawValue).tag($0) }
                     }
                 }
-                Button { store.showPrivate.toggle() } label: {
-                    Label(store.showPrivate ? "Hide Private" : "Show Private", systemImage: store.showPrivate ? "eye" : "eye.slash")
+                if opened == nil {   // on iPad the eye sits over the details, at the top right
+                    Button { store.showPrivate.toggle() } label: {
+                        Label(store.showPrivate ? "Hide Private" : "Show Private", systemImage: store.showPrivate ? "eye" : "eye.slash")
+                    }
                 }
             }
         }

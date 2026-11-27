@@ -1,40 +1,49 @@
 import SwiftUI
 
-/// Three days across, with the same three days of the following week underneath. Scrolls sideways one
-/// day at a time; each row keeps a readable height and the page scrolls vertically instead.
+/// Three days across (seven on iPad), with the same days of the following week underneath. Scrolls sideways one
+/// day at a time. On iPhone each row keeps a readable height and the page scrolls vertically; on iPad both weeks
+/// fit the screen. The to-do strip is as tall as the busiest day needs, as on the Mac.
 struct CalendarScreen: View {
     @Environment(AppStore.self) private var store
     @State private var leading: Date?   // leftmost visible day
     @State private var days: [Date] = []
+    @State private var settled: Date?   // the leftmost day the user scrolled to: a rotation keeps it in view
 
     static let gutter: CGFloat = 34
-    static let hourHeight: CGFloat = 40
+    static let hourHeight: CGFloat = 40   // on iPhone; iPad fits the hours to the screen, at least `minHourHeight`
+    static let minHourHeight: CGFloat = 16
     static let headerHeight: CGFloat = 34
     static let allDayHeight: CGFloat = 44
-    static var todoHeight: CGFloat { 3 * (Metrics.taskRow + 1) + 8 }
-    static var gridHeight: CGFloat { CGFloat(DayHours.lastHour - DayHours.firstHour) * hourHeight }
+    static var hours: Int { DayHours.lastHour - DayHours.firstHour }
 
     private var today: Date { Calendar.laes.startOfDay(for: .now) }
 
     var body: some View {
         TimelineView(.everyMinute) { context in
             GeometryReader { geo in
-                let column = floor((geo.size.width - Self.gutter) / (geo.size.width > 700 ? 7 : 3))
+                let wide = geo.size.width > 700
+                let column = floor((geo.size.width - Self.gutter) / (wide ? 7 : 3))
+                let first = leading ?? today
+                let todo = (todoHeight(from: first, now: context.date),
+                            todoHeight(from: Calendar.laes.date(byAdding: .day, value: 7, to: first)!, now: context.date))
+                let fixed = 2 * (Self.headerHeight + Self.allDayHeight + 3) + todo.0 + todo.1 + 2
+                let hour = wide ? max(Self.minHourHeight, floor((geo.size.height - fixed) / CGFloat(2 * Self.hours))) : Self.hourHeight
                 ScrollView(.vertical) {
                     HStack(alignment: .top, spacing: 0) {
                         VStack(spacing: 0) {
-                            hourLabels
+                            hourLabels(todo: todo.0, hour: hour)
                             Color.clear.frame(height: 2)
-                            hourLabels
+                            hourLabels(todo: todo.1, hour: hour)
                         }
                         .frame(width: Self.gutter)
                         ScrollView(.horizontal) {
                             LazyHStack(alignment: .top, spacing: 0) {
                                 ForEach(days, id: \.self) { day in
                                     VStack(spacing: 0) {
-                                        DayCell(day: day, width: column, now: context.date)
+                                        DayCell(day: day, width: column, now: context.date, todoHeight: todo.0, hourHeight: hour)
                                         Color.primary.opacity(0.28).frame(height: 2)   // between this week and the next
-                                        DayCell(day: Calendar.laes.date(byAdding: .day, value: 7, to: day)!, width: column, now: context.date)
+                                        DayCell(day: Calendar.laes.date(byAdding: .day, value: 7, to: day)!, width: column, now: context.date,
+                                                todoHeight: todo.1, hourHeight: hour)
                                     }
                                     .frame(width: column)
                                 }
@@ -43,24 +52,30 @@ struct CalendarScreen: View {
                         }
                         .scrollTargetBehavior(.viewAligned)
                         .scrollPosition(id: $leading, anchor: .leading)
+                        // Only a scroll the user made moves `settled`; the one a rotation causes doesn't.
+                        .onScrollPhaseChange { old, new in
+                            if new == .idle, old == .interacting || old == .decelerating { settled = leading }
+                        }
+                        .id(column)   // a new width (rotation) lays the strip out afresh, at `settled`
                         .scrollIndicators(.hidden)
                     }
                 }
                 .refreshable { await store.refresh() }
+                .onChange(of: column) { if let settled { leading = settled } }
             }
         }
         .navigationTitle((leading ?? today).formatted(.dateTime.month(.abbreviated).year()))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-                Button("Today") { withAnimation { leading = today } }
+                Button("Today") { withAnimation { (leading, settled) = (today, today) } }
             }
         }
         .onAppear {
             guard days.isEmpty else { return }
             // shortcut: a fixed window of days around today, not endless; widen it if anyone plans further out.
             days = (-120...400).map { Calendar.laes.date(byAdding: .day, value: $0, to: today)! }
-            leading = today
+            (leading, settled) = (today, today)
         }
         .onChange(of: leading) { _, day in
             if let day { store.show(day: day) }
@@ -68,19 +83,27 @@ struct CalendarScreen: View {
         .id([store.firstHour, store.lastHour])
     }
 
+    /// The busiest of the seven days from `first`, plus one free row, capped as on the Mac.
+    private func todoHeight(from first: Date, now: Date) -> CGFloat {
+        let busiest = (0..<7).map { offset in
+            tasksDue(on: Calendar.laes.date(byAdding: .day, value: offset, to: first)!, from: store.visibleTasks, today: now).count
+        }.max() ?? 0
+        return CGFloat(min(TodoSlot.maxRows, busiest + 1)) * (Metrics.taskRow + 1) + 8
+    }
+
     /// Hour numbers beside one row's time grid, under blank space the height of its header, tasks and all-day strip.
-    private var hourLabels: some View {
+    private func hourLabels(todo: CGFloat, hour hourHeight: CGFloat) -> some View {
         VStack(spacing: 0) {
-            Color.clear.frame(height: Self.headerHeight + Self.todoHeight + Self.allDayHeight + 3)
+            Color.clear.frame(height: Self.headerHeight + todo + Self.allDayHeight + 3)
             ZStack(alignment: .topTrailing) {
                 ForEach(DayHours.firstHour + 1 ..< DayHours.lastHour, id: \.self) { hour in
                     Text(String(format: "%02d", hour))
                         .font(.system(size: 10, weight: .medium).monospacedDigit())
                         .foregroundStyle(Color.subtle)
-                        .offset(y: CGFloat(hour - DayHours.firstHour) * Self.hourHeight - 6)
+                        .offset(y: CGFloat(hour - DayHours.firstHour) * hourHeight - 6)
                 }
             }
-            .frame(width: Self.gutter - 6, height: Self.gridHeight, alignment: .topTrailing)
+            .frame(width: Self.gutter - 6, height: CGFloat(Self.hours) * hourHeight, alignment: .topTrailing)
             .accessibilityHidden(true)
         }
     }
@@ -92,6 +115,9 @@ private struct DayCell: View {
     let day: Date
     let width: CGFloat
     let now: Date
+    let todoHeight: CGFloat
+    let hourHeight: CGFloat
+    private var gridHeight: CGFloat { CGFloat(CalendarScreen.hours) * hourHeight }
 
     var body: some View {
         let cal = Calendar.laes
@@ -114,7 +140,7 @@ private struct DayCell: View {
             .accessibilityLabel((isToday ? "Today, " : "") + day.formatted(date: .complete, time: .omitted))
             .accessibilityAddTraits(.isHeader)
             Divider()
-            TodoSlot(day: day, now: now).frame(height: CalendarScreen.todoHeight)
+            TodoSlot(day: day, now: now).frame(height: todoHeight)
             Divider()
             VStack(spacing: 2) {
                 ForEach(allDay.prefix(allDay.count > 2 ? 1 : 2)) { event in
@@ -128,7 +154,7 @@ private struct DayCell: View {
             .padding(.top, 3)
             .frame(height: CalendarScreen.allDayHeight, alignment: .top)
             Divider()
-            DayGrid(day: day, width: width, height: CalendarScreen.gridHeight)
+            DayGrid(day: day, width: width, height: gridHeight)
                 .background(alignment: .top) { hourLines }
                 .overlay(alignment: .top) { if isToday { nowLine } }
         }
@@ -139,14 +165,14 @@ private struct DayCell: View {
     private var hourLines: some View {
         VStack(spacing: 0) {
             ForEach(DayHours.firstHour ..< DayHours.lastHour, id: \.self) { _ in
-                Color.clear.frame(height: CalendarScreen.hourHeight).overlay(alignment: .bottom) { Color.separator.opacity(0.6).frame(height: 0.5) }
+                Color.clear.frame(height: hourHeight).overlay(alignment: .bottom) { Color.separator.opacity(0.6).frame(height: 0.5) }
             }
         }
     }
 
     @ViewBuilder private var nowLine: some View {
-        let y = DayHours.y(for: now, dayStart: day, height: CalendarScreen.gridHeight)
-        if y >= 0, y <= CalendarScreen.gridHeight {
+        let y = DayHours.y(for: now, dayStart: day, height: gridHeight)
+        if y >= 0, y <= gridHeight {
             Rectangle().fill(.red).frame(height: 1.5).offset(y: y).accessibilityHidden(true)
         }
     }

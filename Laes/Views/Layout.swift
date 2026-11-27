@@ -88,7 +88,7 @@ enum Metrics {
     #if os(macOS)
     static let taskRow: CGFloat = 16, taskFont: CGFloat = 11, resizeHandle: CGFloat = 6
     #else
-    static let taskRow: CGFloat = 26, taskFont: CGFloat = 13, resizeHandle: CGFloat = 22
+    static let taskRow: CGFloat = 21, taskFont: CGFloat = 13, resizeHandle: CGFloat = 22
     #endif
 }
 
