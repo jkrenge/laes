@@ -12,6 +12,7 @@
 <p align="center">
   <a href="https://laesapp.com/">Website</a> ·
   <a href="https://laesapp.com/help/">Help</a> ·
+  <a href="CHANGELOG.md">What's new</a> ·
   <a href="https://github.com/jkrenge/laes/issues/new/choose">Report a bug</a>
 </p>
 
@@ -77,7 +78,11 @@ Then replace `clientID`.
 
 ## Privacy
 
-lães talks only to Microsoft, with your own sign-in. Your calendar, tasks and notes are cached on your device for offline use, the sign-in and the AI token are kept in your Keychain, and nothing is sent anywhere else. There's no analytics or tracking. Signing out removes the local copy.
+lães talks only to Microsoft, with your own sign-in. Your calendar, tasks and notes are cached on your device for offline use, settings shared between your devices sit in a note in your own OneDrive folder, the sign-in and the AI token are kept in your Keychain, and nothing is sent anywhere else. There's no analytics or tracking. Signing out removes the local copy.
+
+## What's new
+
+See [CHANGELOG.md](CHANGELOG.md), also on the website at [laesapp.com/changelog](https://laesapp.com/changelog/).
 
 ## Contributing and security
 

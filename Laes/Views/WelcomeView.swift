@@ -101,8 +101,8 @@ struct HelpView: View {
         ]),
         ("note.text", "Notes", [
             "Notes are Markdown files in a OneDrive folder only lães uses. The first line, starting with #, is the title.",
-            "New Note starts an empty note with the cursor in the title. Double-click a note to edit it where you clicked; Esc or Done stops. Formatting shows as you type, with its Markdown dimmed.",
-            "Return continues a list. ⌘B, ⌘I, ⌘U and ⌘S style the selection; ⌘L, ⌘O and ⌘T make a list, a numbered list or a to-do list; ⌘K adds a link, and Tab moves from its label to its address. Select text or hold ⌘ to see them all.",
+            "New Note starts an empty note with the cursor in the title. Double-click a note to edit it where you clicked; ⌘S, Esc or Done stops and saves. Formatting shows as you type, with its Markdown dimmed; when you stop, the marks go.",
+            "Return continues a list. ⌘B, ⌘I, ⌘U and ⌘− style the selection; ⌘L, ⌘O and ⌘T make a list, a numbered list or a to-do list; ⌘K adds a link, and Tab moves from its label to its address. Select text or hold ⌘ to see them all.",
             "To write a note for a meeting, click the meeting and choose Add Note. Five minutes before it starts, lães reminds you of its notes.",
             "Search looks through the full text of every note. Notes written by an AI tool or on another device appear after the next refresh.",
         ]),

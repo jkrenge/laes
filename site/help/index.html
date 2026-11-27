@@ -159,8 +159,8 @@
     <h2 id="notes-title">Notes</h2>
     <ul>
       <li>Notes are Markdown files in a OneDrive folder only lães uses. The first line, starting with #, is the title. Microsoft asks you to allow the folder once.</li>
-      <li>New Note starts an empty note with the cursor in the title. On the Mac, double-click a note to edit it right where you clicked; Esc or Done stops. Formatting shows as you type: bold looks bold, with its <code>**</code> still there, dimmed.</li>
-      <li>On the Mac, Return continues a list (an empty item ends it), and <code>*</code>, <code>_</code>, <code>`</code> and <code>~</code> come in pairs. Select text, or hold ⌘ for a moment, to see the formatting buttons and their shortcuts: ⌘B bold, ⌘I italic, ⌘U underline, ⌘S strikethrough, ⌘L list, ⌘O numbered list, ⌘T to-do list, ⌘K link. A new link starts as <code>[label](url)</code>: type the label, press Tab, type the address.</li>
+      <li>New Note starts an empty note with the cursor in the title. On the Mac, double-click a note to edit it right where you clicked; ⌘S, Esc or Done stops and saves. While you edit, bold looks bold with its <code>**</code> still there, dimmed; when you stop, the marks go and to-dos show as boxes.</li>
+      <li>On the Mac, Return continues a list (an empty item ends it), and <code>*</code>, <code>_</code>, <code>`</code> and <code>~</code> come in pairs. Select text, or hold ⌘ for a moment, to see the formatting buttons and their shortcuts: ⌘B bold, ⌘I italic, ⌘U underline, ⌘− strikethrough, ⌘L list, ⌘O numbered list, ⌘T to-do list, ⌘K link. A new link starts as <code>[label](url)</code>: type the label, press Tab, type the address.</li>
       <li>To write a note for a meeting, click the meeting and choose Add Note. Five minutes before it starts, lães reminds you of its notes.</li>
       <li>Search looks through the full text of every note. Notes written by an AI tool or on another device appear after the next refresh.</li>
       <li>Copy Note copies the whole note as Markdown. Delete removes the file from your OneDrive folder.</li>
@@ -200,6 +200,8 @@
     <dl class="panes">
       <dt>General</dt>
       <dd>Your account, to sign in or out (on iPhone, above the other panes). <em>Keep notes in OneDrive</em>: switch this off if your account has no OneDrive or your organisation doesn't allow it; signing in then no longer asks for it. <em>Week starts on</em> (Saturday unless you change it), and the hours the calendar shows, 07:00 to 20:00 unless you change them.</dd>
+      <dt>Shared settings</dt>
+      <dd>The private group, the order of your lists, the week's first day and the hours shown are the same on every device signed in to your account. lães keeps them in a read-only note, <em>lães settings</em>, at the end of your notes; the device that changed them last wins. With notes switched off, each device keeps its own.</dd>
       <dt>Behavior <span class="tag">iPhone</span></dt>
       <dd>Whether the Tasks tab opens with your lists, or with Planned: Overdue &amp; Today. Back then leads to your lists.</dd>
       <dt>Private Group</dt>
@@ -326,7 +328,7 @@
 </main>
 
 <footer class="footer">
-  <p><span class="tilde" aria-hidden="true">≈</span> lães, say “lanes” · <a href="./" aria-current="page">Help</a> · <a href="../privacy/">Privacy</a> · <a href="#getting-help">Contact</a> · © 2026 Julian Krenge</p>
+  <p><span class="tilde" aria-hidden="true">≈</span> lães, say “lanes” · <a href="./" aria-current="page">Help</a> · <a href="../privacy/">Privacy</a> · <a href="../changelog/">What’s new</a> · <a href="#getting-help">Contact</a> · © 2026 Julian Krenge</p>
   <p class="fine">lães is an independent app and is not affiliated with or endorsed by Microsoft. Microsoft 365, Outlook, Microsoft To Do and OneDrive are trademarks of the Microsoft group of companies.</p>
 </footer>
 
