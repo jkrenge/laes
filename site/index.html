@@ -301,9 +301,8 @@
   <section class="beta" id="beta" aria-labelledby="beta-title">
     <img src="img/icon-192.webp" alt="" width="96" height="96">
     <h2 id="beta-title">Plan the next two weeks with lães</h2>
-    <p>lães is in private beta for Mac and iPhone. It needs a Microsoft 365 work, school or personal account.</p>
-    <!-- Without scripts the button goes to the contact address on the help page. -->
-    <a class="button" href="help/#getting-help" data-invite>Ask for an invite</a>
+    <p>lães is in public beta for Mac and iPhone through Apple's TestFlight. It needs a Microsoft 365 work, school or personal account.</p>
+    <a class="button" href="https://testflight.apple.com/join/f6QjPT1S">Join on TestFlight</a>
   </section>
 
   <!-- Changelog: newest first. When a build goes out, give "Next build" its version and date. -->
@@ -333,10 +332,6 @@
   <p class="fine">lães is an independent app and is not affiliated with or endorsed by Microsoft. Microsoft 365, Outlook, Microsoft To Do and OneDrive are trademarks of the Microsoft group of companies. Screenshots show sample data.</p>
 </footer>
 
-<script>
-  // The address is put together here rather than written in the page, so bots that harvest addresses from HTML don't find it.
-  document.querySelector("a[data-invite]").href = "mailto:" + ["inbox", "laesapp.com"].join("@") + "?subject=" + encodeURIComponent("lães beta invite");
-</script>
 
 </body>
 </html>
