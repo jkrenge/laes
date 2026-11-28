@@ -463,11 +463,8 @@ struct TaskListView: View {
     @State private var listEdit: ListEdit?
     @State private var added: [String] = []   // tasks added to the open list, shown last
     @AppStorage("taskSort") private var sort = TaskSort.list
-    @State private var query = ""   // a search across every list, shown instead of the chosen one
-    @FocusState private var searchFocused: Bool
 
     private var current: TaskSource { source ?? .planned }
-    private var isSearching: Bool { !query.trimmingCharacters(in: .whitespaces).isEmpty }
     private var today: Date { Calendar.laes.startOfDay(for: now) }
     private var lists: [TaskList] { store.visibleLists.filter { !$0.isBuiltIn } }   // the user's own, reorderable
     private var shown: [TodoTask] { store.sortedTasks(in: current, planned: planned, now: now, by: sort, addedLast: added) }
@@ -475,13 +472,11 @@ struct TaskListView: View {
     private func tasks(in source: TaskSource) -> [TodoTask] { store.tasks(in: source) }
 
     var body: some View {
-        HStack(spacing: 0) {
-            sidebar.frame(width: 230)
-            Divider()
+        // The lists sit on the window's background; the tasks and the open task's details on cards beside them.
+        HStack(spacing: 10) {
+            sidebar.frame(width: 250)   // as wide as the notes list
             VStack(alignment: .leading, spacing: 0) {
-                if isSearching {
-                    searchResults
-                } else if current == .completed {
+                if current == .completed {
                     completedList
                 } else {
                     header
@@ -489,29 +484,39 @@ struct TaskListView: View {
                     if current != .important { addBar.disabled(!isShown) }
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .card()
             if let task = selected {
-                Divider()
                 ScrollView {
                     TaskDetails(task: task, close: { selectedID = nil })
                         .id(selectedID)   // fresh state per task; the old one saves its note as it goes
                 }
                 .frame(width: 352)
-                .background(Color.primary.opacity(0.035))
+                .card()
                 .disabled(!isShown)
             }
         }
+        .padding([.trailing, .bottom], 10)   // the toolbar keeps 8 pt above the cards, as above the weeks
         .focusedSceneValue(\.selectedTask, isShown ? selected : nil)
-        .onChange(of: source) { added = []; query = "" }
-        .task(id: isSearching) { if isSearching { await store.loadCompleted() } }   // so done tasks are found too
-        .background {
-            Button("Search Tasks") { searchFocused = true }
-                .keyboardShortcut("f")
-                .disabled(!isShown)
-                .frame(width: 0, height: 0)
-                .opacity(0)
-                .accessibilityHidden(true)
+        .onChange(of: source) { added = [] }
+        .onChange(of: store.openTask, initial: true) {   // found by the search
+            guard let id = store.openTask else { return }
+            store.openTask = nil
+            if store.visibleCompleted.contains(where: { $0.id == id }) { return source = .completed }
+            if !shown.contains(where: { $0.id == id }), let task = store.visibleTasks.first(where: { $0.id == id }) { source = .list(task.listID) }
+            selectedID = id
         }
+        #if DEBUG
+        .onAppear { if ProcessInfo.processInfo.arguments.contains("-openFirstTask") { selectedID = shown.first?.id } }   // for screenshots
+        #endif
     }
+
+    #if DEBUG
+    /// `-shot` draws a selected row as a black bar, so the website's screenshots are taken with none selected.
+    private var listSelection: Binding<TaskSource?> { ProcessInfo.processInfo.arguments.contains("-shot") ? .constant(nil) : $source }
+    #else
+    private var listSelection: Binding<TaskSource?> { $source }
+    #endif
 
     private var selected: TodoTask? {
         let id = selectedID.map { store.adopted[$0] ?? $0 }   // a task moved to another list has a new id
@@ -521,7 +526,7 @@ struct TaskListView: View {
     // MARK: Sidebar
 
     private var sidebar: some View {
-        List(selection: $source) {
+        List(selection: listSelection) {
             Section {
                 sidebarRow("Planned", "calendar", .planned)
                 sidebarRow("Important", "star", .important)
@@ -543,14 +548,7 @@ struct TaskListView: View {
             }
         }
         .listStyle(.sidebar)
-        .safeAreaInset(edge: .top, spacing: 0) {   // as in Notes
-            TextField("Search tasks (⌘F)", text: $query)
-                .textFieldStyle(.roundedBorder)
-                .focused($searchFocused)
-                .onExitCommand { query = ""; searchFocused = false }
-                .disabled(!isShown)
-                .padding(10)
-        }
+        .scrollContentBackground(.hidden)   // on the window's background, beside the cards
         .safeAreaInset(edge: .bottom, alignment: .leading) {
             VStack(alignment: .leading, spacing: 0) {
                 if showOrderNote {
@@ -627,6 +625,7 @@ struct TaskListView: View {
                 .padding(.bottom, 16)
             }
             .onChange(of: added) { _, ids in if let id = ids.last { withAnimation { proxy.scrollTo(id, anchor: .bottom) } } }
+            .onChange(of: selectedID) { _, id in if let id { proxy.scrollTo(id) } }   // one the search opened may be out of sight
         }
     }
 
@@ -634,35 +633,7 @@ struct TaskListView: View {
         if case .list = current { true } else { false }
     }
 
-    // MARK: Search and completed
-
-    /// Open matches in every list, then completed ones.
-    private var searchResults: some View {
-        let open = searchTasks(store.visibleTasks, query)
-        let done = searchTasks(store.visibleCompleted, query)
-        return VStack(alignment: .leading, spacing: 0) {
-            pageTitle("Results for “\(query.trimmingCharacters(in: .whitespaces))”",
-                      "In every list, titles and notes · Esc goes back to \(title)")
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 4) {
-                    ForEach(open) { task in
-                        TaskListRow(task: task, today: today, showsList: true, isSelected: task.id == selected?.id, query: query) {
-                            selectedID = selected?.id == task.id ? nil : task.id
-                        }
-                    }
-                    if !done.isEmpty {
-                        groupTitle("Completed")
-                        ForEach(done) { CompletedTaskRow(task: $0, query: query, now: now) }
-                    }
-                    if open.isEmpty, done.isEmpty {
-                        Text(store.isLoadingCompleted ? "Searching…" : "No tasks match").foregroundStyle(Color.subtle).padding(40).frame(maxWidth: .infinity)
-                    }
-                }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 16)
-            }
-        }
-    }
+    // MARK: Completed
 
     /// Done tasks by day, newest first; the last 30 days at first.
     private var completedList: some View {

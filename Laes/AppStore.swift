@@ -118,6 +118,12 @@ final class AppStore {
     var notesError: String?
     /// File name of a note some view asked to show (a reminder, an event); the Notes view takes it.
     var openNote: String?
+    /// A task and a meeting the search asked to show; the Tasks view and the meeting's block take them.
+    var openTask: String?
+    var openEvent: String?
+    /// Meetings from three months back to six ahead, loaded when a search starts: it finds more than the weeks on screen.
+    private(set) var farEvents: [CalendarEvent] = []
+    @ObservationIgnored private var farEventsLoaded: Date?
     @ObservationIgnored private var notesUpload: Task<Void, Never>?
 
     /// Task id -> the list it is being moved to, while the move is under way.
@@ -148,7 +154,12 @@ final class AppStore {
 
     init() {
         // `-demo` shows the sample data without touching the account, for screenshots.
-        isSignedIn = !ProcessInfo.processInfo.arguments.contains("-demo") && auth.hasSession   // demo first: no Keychain prompt
+        #if DEBUG
+        let demo = ProcessInfo.processInfo.arguments.contains("-demo")
+        #else
+        let demo = false
+        #endif
+        isSignedIn = !demo && auth.hasSession   // demo first: no Keychain prompt
         if isSignedIn { loadCache() } else { loadSample() }
         monitor.pathUpdateHandler = { [weak self] path in
             let online = path.status == .satisfied
@@ -197,6 +208,7 @@ final class AppStore {
             Aptabase.shared.trackEvent("signed_in")
             (events, tasks, taskLists, checklists, categoryColors, notes) = ([], [], [], [:], [:], [])   // drop the sample data
             (completedTasks, completedSince) = ([], nil)
+            (farEvents, farEventsLoaded) = ([], nil)
             await refresh()
         } catch {
             errorMessage = error.localizedDescription
@@ -209,6 +221,7 @@ final class AppStore {
         pending = []
         checklists = [:]
         (completedTasks, completedSince) = ([], nil)
+        (farEvents, farEventsLoaded) = ([], nil)
         notes = []
         Disk.removeAll()
         loadSample()
@@ -441,7 +454,7 @@ final class AppStore {
         return notes.filter { note in
             if note.isSettings { return false }   // it names the private lists and categories
             let categories = note.meta("event_categories") != nil ? note.eventCategories
-                : events.first { $0.id == note.eventID }?.categories ?? []
+                : (events + farEvents).first { $0.id == note.eventID }?.categories ?? []
             return !hasCategory(categories, in: privateCategories)
         }
     }
@@ -703,6 +716,37 @@ final class AppStore {
         } catch {
             errorMessage = error.localizedDescription
             Reporting.failed("completed", error)
+        }
+    }
+
+    /// Meetings a search looks through, without the private group while it is hidden.
+    var visibleSearchEvents: [CalendarEvent] {
+        // The weeks on screen are the fresher copy: a meeting moved or deleted there must not come back from the months.
+        let fresh = Set(events.map(\.id)), onScreen = visibleRange
+        let all = events + farEvents.filter { !fresh.contains($0.id) && !onScreen.contains($0.start) }
+        return showPrivate ? all : all.filter { !hasCategory($0.categories, in: privateCategories) }
+    }
+
+    /// At most every 15 minutes. If it fails, the search covers the weeks on screen only.
+    func loadSearchEvents() async {
+        guard isSignedIn, farEventsLoaded.map({ $0.timeIntervalSinceNow < -900 }) ?? true else { return }
+        farEventsLoaded = .now
+        let from = Calendar.laes.date(byAdding: .month, value: -3, to: .now)!, to = Calendar.laes.date(byAdding: .month, value: 6, to: .now)!
+        let loaded = try? await GraphClient(auth: auth).events(from: from, to: to)
+        guard isSignedIn else { return }   // signed out meanwhile: the sample data gets none of the account's meetings
+        if let loaded { farEvents = loaded } else { farEventsLoaded = nil }
+    }
+
+    /// Goes to a meeting's week and opens its details.
+    func show(event: CalendarEvent) {
+        if !visibleRange.contains(event.start) {
+            weekStart = Calendar.laes.weekStart(for: event.start)
+            Task { await refresh() }
+        }
+        openEvent = event.id
+        Task {   // never shown (cancelled meanwhile, say): don't pop up later
+            try? await Task.sleep(for: .seconds(8))
+            if openEvent == event.id { openEvent = nil }
         }
     }
 

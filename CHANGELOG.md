@@ -2,6 +2,14 @@
 
 What changed in lães, newest first. The website shows the same list at [laesapp.com/changelog](https://laesapp.com/changelog/).
 
+## 1.0 (build 9), 27 November 2026
+
+- On the Mac, one search in the toolbar (⌘F) finds tasks, notes and meetings, typos forgiven, with the current view's results first. It replaces the search fields in Tasks and Notes.
+- On the Mac, Tasks and Notes are calmer: the lists sit on the window's background and the tasks, a task's details and the open note on cards beside them, with no dividers.
+- The toolbar keeps refresh, settings and account together, with hiding private items on its own at the end. Hold ⌘ to see the shortcuts under the buttons. In the weeks, ‹ Today › sits right next to the view switch.
+- Settings › General has Appearance: Light, Dark or Automatic (the default).
+- On the Mac, clicking a to-do's box in a note ticks it again instead of breaking it.
+
 ## 1.0 (build 8), 27 November 2026
 
 - Search your tasks: one field above the lists finds tasks in every list by title or note, typos too, with done ones below. On the Mac, ⌘F goes to it.

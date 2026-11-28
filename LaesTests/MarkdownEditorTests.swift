@@ -159,12 +159,32 @@ import AppKit
         view.isEditable = false
         var toggled = false
         view.onToggleTask = { toggled = true }
-        let box = NSRange(location: 2, length: 3)
         if let storage = view.textStorage { MarkdownStyler.style(storage, editing: false) }
+        // A click on the box's middle, whose kerned space is a run of its own, still finds the whole "[ ]".
+        let manager = view.layoutManager!, container = view.textContainer!
+        let middle = manager.boundingRect(forGlyphRange: manager.glyphRange(forCharacterRange: NSRange(location: 3, length: 1), actualCharacterRange: nil), in: container)
+        let box = view.taskBox(at: NSPoint(x: middle.midX + view.textContainerOrigin.x, y: middle.midY + view.textContainerOrigin.y))
+        #expect(box == NSRange(location: 2, length: 3))
+        guard let box else { return }
         view.toggleTask(box)
         #expect(view.string == "- [x] call" && toggled)
         view.toggleTask(box)
         #expect(view.string == "- [ ] call")
+    }
+
+    @Test func aLongFirstLineWrapsBeforeTheButtons() throws {
+        let view = MarkdownTextView(usingTextLayoutManager: false)
+        view.textContainer?.widthTracksTextView = true
+        view.textContainerInset = NSSize(width: 20, height: 24)
+        view.buttonsClearance = NSSize(width: 180, height: 22)
+        view.frame = NSRect(x: 0, y: 0, width: 600, height: 400)
+        view.string = String(repeating: "word ", count: 60)
+        let manager = try #require(view.layoutManager), container = try #require(view.textContainer)
+        manager.ensureLayout(for: container)
+        let first = manager.lineFragmentUsedRect(forGlyphAt: 0, effectiveRange: nil)
+        #expect(first.maxX <= container.size.width - 180)
+        let later = manager.lineFragmentUsedRect(forGlyphAt: manager.numberOfGlyphs - 1, effectiveRange: nil)
+        #expect(later.minY > first.minY)
     }
 
     @Test func linksPutPlaceholdersAndTabBetweenThem() {

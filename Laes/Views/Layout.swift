@@ -158,6 +158,10 @@ extension Color {
     #endif
     static let overdue = dynamic(light: PlatformColor(red: 0.70, green: 0.15, blue: 0.12, alpha: 1),
                                  dark: PlatformColor(red: 1.0, green: 0.45, blue: 0.42, alpha: 1))
+    /// Tasks and notes sit on cards a step off the window's background: near-white, not white, in light mode.
+    static let card = dynamic(light: PlatformColor(white: 0.985, alpha: 1), dark: PlatformColor(white: 0.19, alpha: 1))
+    /// The window's background behind those cards, toolbar included.
+    static let canvas = dynamic(light: PlatformColor(white: 0.935, alpha: 1), dark: PlatformColor(white: 0.12, alpha: 1))
     static let important = dynamic(light: PlatformColor(red: 0.70, green: 0.42, blue: 0.0, alpha: 1),
                                    dark: PlatformColor(red: 1.0, green: 0.79, blue: 0.26, alpha: 1))
 }
@@ -170,6 +174,13 @@ extension AppStore {
 
 #if os(macOS)
 extension View {
+    /// A card on the window's background, as Tasks' list and details and the open note use. No dividers around it.
+    func card() -> some View {
+        background(Color.card, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.primary.opacity(0.07)))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
     /// Floating glass, as on iPhone; frosted before macOS 26.
     @ViewBuilder func glassCapsule() -> some View {
         if #available(macOS 26, *) {

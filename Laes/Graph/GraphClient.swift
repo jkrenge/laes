@@ -432,7 +432,7 @@ struct GraphClient {
                 isCancelled: e.isCancelled ?? false,
                 webLink: e.webLink.flatMap(URL.init(string:)),
                 attendees: (e.attendees ?? []).compactMap { $0.emailAddress?.name ?? $0.emailAddress?.address },
-                joinURL: e.onlineMeeting?.joinUrl.flatMap(URL.init(string:))
+                joinURL: e.onlineMeeting?.joinUrl.flatMap(URL.init(string:)).flatMap { $0.scheme == "https" ? $0 : nil }   // set by the organiser: only web links are opened
             ))
         }
         return Page(items: events, next: page.next)

@@ -192,14 +192,15 @@ final class MCPServer {
         }
         func list() throws -> TaskList? {
             guard let wanted = args["list"] as? String else { return nil }
-            guard let list = store.taskLists.first(where: { $0.id == wanted || $0.name.caseInsensitiveCompare(wanted) == .orderedSame }) else {
-                throw GraphError("No list called \(wanted). Lists: \(store.taskLists.map(\.name).joined(separator: ", "))")
+            let lists = store.visibleLists   // not the private ones while they are hidden, by name or in the error
+            guard let list = lists.first(where: { $0.id == wanted || $0.name.caseInsensitiveCompare(wanted) == .orderedSame }) else {
+                throw GraphError("No list called \(wanted). Lists: \(lists.map(\.name).joined(separator: ", "))")
             }
             return list
         }
         func task() throws -> TodoTask {
             let id = args["id"] as? String ?? ""
-            guard let task = store.tasks.first(where: { $0.id == id || $0.id == store.adopted[id] }) else {
+            guard let task = store.visibleTasks.first(where: { $0.id == id || $0.id == store.adopted[id] }) else {   // a hidden one stays hidden to a tool that kept its id
                 throw GraphError("No open task with that id. It may be completed or deleted; list_tasks shows the current ones.")
             }
             return task
@@ -216,8 +217,10 @@ final class MCPServer {
         func linkedEvent() async throws -> CalendarEvent?? {
             guard let id = args["event_id"] as? String else { return nil }
             if id.isEmpty { return .some(nil) }
-            if let event = store.events.first(where: { $0.id == id }) { return event }
-            return try await GraphClient(auth: store.auth).eventDetails(id: id).event
+            let event: CalendarEvent
+            if let loaded = store.events.first(where: { $0.id == id }) { event = loaded } else { event = try await GraphClient(auth: store.auth).eventDetails(id: id).event }
+            guard store.showPrivate || !hasCategory(event.categories, in: store.privateCategories) else { throw GraphError("No event with that id.") }
+            return event
         }
 
         switch name {

@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>lães (say “lanes”) — two weeks, one screen, for Microsoft 365</title>
-<meta name="description" content="lães, pronounced “lanes”, puts your Outlook calendar, Microsoft To Do tasks and Markdown notes side by side on Mac and iPhone, two weeks at a time, with a built-in MCP server so the AI tools on your Mac can plan with you.">
+<title>lães (say “lanes”) — calendar, tasks and notes for Microsoft 365</title>
+<meta name="description" content="lães, pronounced “lanes”, is one interface for your Outlook calendar, Microsoft To Do tasks and Markdown notes, on Mac, iPhone and iPad. Two weeks at a time, with a built-in MCP server so the AI tools on your Mac can plan with you.">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0e0e13" media="(prefers-color-scheme: dark)">
@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="img/icon.png">
 <link rel="stylesheet" href="style.css">
 <script src="hero.js" defer></script>
-<script src="carousel.js" defer></script>
+<script src="demo.js" defer></script>
 </head>
 <body>
 
@@ -24,10 +24,11 @@
     <span>lães</span>
   </a>
   <nav aria-label="Main">
-    <a href="#opinions">Opinions</a>
-    <a href="#tour">Tour</a>
+    <a href="#connect">Your data</a>
+    <a href="#plan">Planning</a>
     <a href="#agent">Agent</a>
-    <a href="#data">Your data</a>
+    <a href="#views">Views</a>
+    <a href="#custom">Make it yours</a>
     <a class="nav-help" href="help/">Help</a>
   </nav>
   <a class="button small" href="#beta">Join the beta</a>
@@ -44,11 +45,11 @@
       <img src="img/sticker-name.webp" alt="lães" width="280" height="163">
       <span class="say"><b>say “lanes”</b> <span>the <span aria-hidden="true">≈</span> is two lanes: this week and the next</span></span>
     </p>
-    <h1 id="hero-title">Two weeks, one screen.<br><span class="accent">Your agent does the&nbsp;rest.</span></h1>
-    <p class="lede">lães puts your Outlook calendar and Microsoft To Do side by side on Mac and iPhone, two weeks at a time, starting Saturday. Notes wait for you before every meeting. And an AI agent on your Mac can plan, prepare and tidy up for you.</p>
+    <h1 id="hero-title">Calendar, tasks and notes. <span class="accent">Connected to your Microsoft&nbsp;365.</span></h1>
+    <p class="lede">lães shows your Outlook calendar, Microsoft To Do and your notes side by side, on Mac, iPhone and iPad. Two weeks at a time, with a clear opinion about how to plan them.</p>
     <div class="cta-row">
       <a class="button" href="#beta">Join the beta</a>
-      <a class="button ghost" href="#tour">Take the tour</a>
+      <a class="button ghost" href="#plan">See how it plans</a>
     </div>
 
     <section class="showcase" aria-roledescription="carousel" aria-label="lães on Mac and iPhone">
@@ -67,15 +68,15 @@
 
       <div class="stage">
         <div class="shot is-current" role="group" aria-roledescription="slide" aria-label="Weeks, 1 of 3">
-          <div class="mac"><img src="img/mac-weeks-1920.webp" srcset="img/mac-weeks-960.webp 960w, img/mac-weeks-1920.webp 1920w" sizes="(min-width: 1100px) 840px, 84vw" width="1920" height="1210" fetchpriority="high" alt="lães on the Mac: two weeks from Saturday to Friday, each day with its tasks on top and its meetings below, today highlighted with a red line for the current time."></div>
+          <div class="mac"><img src="img/mac-weeks-1920.webp" srcset="img/mac-weeks-960.webp 960w, img/mac-weeks-1920.webp 1920w" sizes="(min-width: 1100px) 840px, 84vw" width="1920" height="1280" fetchpriority="high" alt="lães on the Mac: two weeks from Saturday to Friday, each day with its tasks on top and its meetings below, and a search field in the middle of the toolbar."></div>
           <div class="phone"><img src="img/ios-calendar-600.webp" width="600" height="1299" alt="lães on iPhone: three days side by side with the same tasks and meetings."></div>
         </div>
         <div class="shot" role="group" aria-roledescription="slide" aria-label="Tasks, 2 of 3">
-          <div class="mac"><img src="img/mac-tasks-1920.webp" srcset="img/mac-tasks-960.webp 960w, img/mac-tasks-1920.webp 1920w" sizes="(min-width: 1100px) 840px, 84vw" width="1920" height="1442" decoding="async" alt="The Planned task list on the Mac, grouped by list, with filters from Overdue to Later."></div>
+          <div class="mac"><img src="img/mac-tasks-1920.webp" srcset="img/mac-tasks-960.webp 960w, img/mac-tasks-1920.webp 1920w" sizes="(min-width: 1100px) 840px, 84vw" width="1920" height="1280" decoding="async" alt="The Tasks view on the Mac: the lists on the left, the Planned tasks on a card, and one task's details on a second card."></div>
           <div class="phone"><img src="img/ios-tasks-600.webp" width="600" height="1299" decoding="async" alt="The same Planned list on iPhone, with the list name and due day in each row."></div>
         </div>
         <div class="shot" role="group" aria-roledescription="slide" aria-label="Notes, 3 of 3">
-          <div class="mac"><img class="contain" src="img/mac-notes-1920.webp" srcset="img/mac-notes-960.webp 960w, img/mac-notes-1920.webp 1920w" sizes="(min-width: 1100px) 840px, 84vw" width="1920" height="635" decoding="async" alt="A Markdown note on the Mac, linked to the Weekly sync meeting, with its agenda as a checklist."></div>
+          <div class="mac"><img src="img/mac-notes-1920.webp" srcset="img/mac-notes-960.webp 960w, img/mac-notes-1920.webp 1920w" sizes="(min-width: 1100px) 840px, 84vw" width="1920" height="1280" decoding="async" alt="A Markdown note on the Mac, linked to the Weekly sync meeting, with its agenda as a checklist."></div>
           <div class="phone"><img src="img/ios-note-600.webp" width="600" height="1299" decoding="async" alt="The same note on iPhone."></div>
         </div>
       </div>
@@ -84,203 +85,29 @@
     </section>
   </section>
 
-  <!-- Opinions -->
-  <section class="opinions" id="opinions" aria-labelledby="opinions-title">
-    <div class="section-head">
-      <p class="eyebrow">Opinionated on purpose</p>
-      <h2 id="opinions-title">Fewer settings. More plan.</h2>
-      <p class="lede">lães is built around one way of working. If it is yours, everything is already where it should be.</p>
-    </div>
-    <ol class="cards">
-      <li class="card">
-        <span class="num" aria-hidden="true">01</span>
-        <h3>Agent first</h3>
-        <p>Every calendar, task and note is reachable by the AI tool you already use. Ask it to block focus time, sort your week or write the brief for tomorrow's check-in. It works through lães, on your Mac, with your rules.</p>
+  <!-- What it connects -->
+  <section class="connect" id="connect" aria-labelledby="connect-title">
+    <img class="connect-icon" src="img/icon-192.webp" alt="" width="72" height="72">
+    <h2 id="connect-title">lães brings your calendar, tasks and notes into one clear, organised place.</h2>
+    <ul class="sources">
+      <li>
+        <img src="img/ms-outlook.webp" alt="" width="72" height="72" loading="lazy">
+        <b>Outlook Calendar</b><span>your meetings</span>
       </li>
-      <li class="card">
-        <span class="num" aria-hidden="true">02</span>
-        <h3>Weeks start on Saturday</h3>
-        <p>Plan the coming week on the weekend, when there is room to think. Saturday to Friday keeps the work week in one unbroken row, so Friday's loose ends and Monday's plans never sit on different screens.</p>
+      <li>
+        <img src="img/ms-todo.webp" alt="" width="72" height="72" loading="lazy">
+        <b>Microsoft To Do</b><span>your tasks and lists</span>
       </li>
-      <li class="card">
-        <span class="num" aria-hidden="true">03</span>
-        <h3>Two weeks, not a month</h3>
-        <p>This week on top, next week below. Close enough to act on, far enough to see what is coming. No scrolling, no month grid full of dots.</p>
+      <li>
+        <img src="img/ms-onedrive.webp" alt="" width="72" height="72" loading="lazy">
+        <b>OneDrive</b><span>your notes, as Markdown files</span>
       </li>
-      <li class="card">
-        <span class="num" aria-hidden="true">04</span>
-        <h3>Microsoft 365, and only that</h3>
-        <p>Outlook is your calendar. To Do is your task list. OneDrive keeps your notes. lães adds no account, and your calendar, tasks and notes never leave Microsoft, so there is nothing new to trust or migrate.</p>
-      </li>
-      <li class="card">
-        <span class="num" aria-hidden="true">05</span>
-        <h3>Mac and iPhone, in step</h3>
-        <p>The Mac is where you plan, the iPhone is where you check. Both read the same Microsoft data and sync whenever you come back to them, even after working offline.</p>
-      </li>
-      <li class="card">
-        <span class="num" aria-hidden="true">06</span>
-        <h3>Private with one switch</h3>
-        <p>Mark categories and lists as private, then hide all of them, and their notes, with the eye. Share your screen without a second thought. Your agent sees exactly what you see.</p>
-      </li>
-    </ol>
-  </section>
-
-  <!-- Tour slideshow -->
-  <section class="tour" id="tour" aria-labelledby="tour-title">
-    <div class="section-head">
-      <p class="eyebrow">The tour</p>
-      <h2 id="tour-title">How lães keeps the plan honest</h2>
-    </div>
-
-    <section class="carousel" aria-roledescription="carousel" aria-label="lães tour">
-      <div class="carousel-controls">
-        <button type="button" class="round" data-direction="previous" aria-label="Previous slide">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
-        </button>
-        <button type="button" class="round" data-direction="next" aria-label="Next slide">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
-        </button>
-      </div>
-
-      <div class="carousel-track" tabindex="0" role="group" aria-label="Slides">
-
-        <div class="slide" role="group" aria-roledescription="slide" aria-label="1 of 7" data-marker-name="Two weeks">
-          <div class="slide-copy">
-            <p class="step">Plan</p>
-            <h3>Two weeks on one screen</h3>
-            <p>Saturday to Friday, this week above next. Tasks sit on top of their day, meetings below, and the red line shows where you are right now.</p>
-          </div>
-          <div class="slide-stage">
-            <div class="mac"><img src="img/mac-weeks-960.webp" srcset="img/mac-weeks-960.webp 960w, img/mac-weeks-1920.webp 1920w" sizes="(min-width: 1100px) 640px, 90vw" width="1920" height="1210" loading="lazy" alt="The two-week view on the Mac with tasks and meetings for each day."></div>
-          </div>
-        </div>
-
-        <div class="slide" role="group" aria-roledescription="slide" aria-label="2 of 7" data-marker-name="Tasks">
-          <div class="slide-copy">
-            <p class="step">Decide</p>
-            <h3>Tasks with a due day, not a someday</h3>
-            <p>Your Microsoft To Do lists, one tap from Overdue &amp; Today. On the Mac, drag a task onto the calendar and lães blocks the time for it in Outlook.</p>
-          </div>
-          <div class="slide-stage duo">
-            <div class="mac"><img src="img/mac-tasks-960.webp" width="960" height="721" loading="lazy" alt="The Planned task list on the Mac, filtered by due day."></div>
-            <div class="phone"><img src="img/ios-tasks-600.webp" width="600" height="1299" loading="lazy" alt="The same Planned list on iPhone, with the list name in each row."></div>
-          </div>
-        </div>
-
-        <div class="slide" role="group" aria-roledescription="slide" aria-label="3 of 7" data-marker-name="On the go">
-          <div class="slide-copy">
-            <p class="step">Check</p>
-            <h3>The same plan in your pocket</h3>
-            <p>Three days at a time, snapping day by day, with next week right below. Open a task and it rises from the bottom, ready for a quick decision.</p>
-          </div>
-          <div class="slide-stage phones">
-            <div class="phone"><img src="img/ios-calendar-600.webp" width="600" height="1299" loading="lazy" alt="The iPhone calendar showing three days."></div>
-            <div class="phone"><img src="img/ios-drawer-600.webp" width="600" height="1299" loading="lazy" alt="A task's details in a drawer on iPhone."></div>
-          </div>
-        </div>
-
-        <div class="slide" role="group" aria-roledescription="slide" aria-label="4 of 7" data-marker-name="Notes">
-          <div class="slide-copy">
-            <p class="step">Prepare</p>
-            <h3>Notes that know their meeting</h3>
-            <p>Link a note to a meeting and lães reminds you five minutes before it starts. Every note is a plain Markdown file in your own OneDrive.</p>
-          </div>
-          <div class="slide-stage duo">
-            <div class="mac"><img src="img/mac-notes-960.webp" width="960" height="318" loading="lazy" alt="A meeting note on the Mac with its agenda as a checklist."></div>
-            <div class="phone"><img src="img/ios-note-600.webp" width="600" height="1299" loading="lazy" alt="The same note on iPhone, linked to Weekly sync."></div>
-          </div>
-        </div>
-
-        <div class="slide" role="group" aria-roledescription="slide" aria-label="5 of 7" data-marker-name="Markdown">
-          <div class="slide-copy">
-            <p class="step">Write</p>
-            <h3>Markdown, with a keyboard that knows it</h3>
-            <p>Headings, lists, to-dos, links. One row of keys above the keyboard, and a link button that picks up the address you just copied.</p>
-          </div>
-          <div class="slide-stage">
-            <div class="phone"><img src="img/ios-markdown-600.webp" width="600" height="1299" loading="lazy" alt="Editing a note's Markdown on iPhone with a formatting bar above the keyboard."></div>
-          </div>
-        </div>
-
-        <div class="slide" role="group" aria-roledescription="slide" aria-label="6 of 7" data-marker-name="Agent">
-          <div class="slide-copy">
-            <p class="step">Delegate</p>
-            <h3>Your agent does the busywork</h3>
-            <p>Turn on AI Access, paste one prompt, and your assistant can read your weeks, file tasks, block time and write the notes for your next check-in.</p>
-          </div>
-          <div class="slide-stage">
-            <div class="chat" role="group" aria-label="Example conversation with an AI assistant connected to lães">
-              <p class="msg you">Here's the transcript of today's call with Acme. Prep me for the follow-up.</p>
-              <p class="msg ai"><span class="tool">search_notes</span><span class="tool">list_events</span><span class="tool">create_note</span><span class="tool">create_task</span>
-                Done. I linked a note with the open questions to <b>Acme follow-up</b> on Tuesday and added two tasks for Monday. You'll get a reminder five minutes before.</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="slide" role="group" aria-roledescription="slide" aria-label="7 of 7" data-marker-name="Private">
-          <div class="slide-copy">
-            <p class="step">Share</p>
-            <h3>One switch for everything private</h3>
-            <p>The eye hides private meetings, lists and their notes on the Mac, on iPhone and for your agent. Flip it before you share your screen.</p>
-          </div>
-          <div class="slide-stage">
-            <div class="eye-demo" aria-hidden="true">
-              <div class="eye-row"><span class="dot work"></span>Weekly sync</div>
-              <div class="eye-row private"><span class="dot private"></span>Doctor appointment</div>
-              <div class="eye-row"><span class="dot green"></span>Budget review</div>
-              <div class="eye-row private"><span class="dot private"></span>1:1 coaching</div>
-              <div class="eye-row"><span class="dot work"></span>Team retro</div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-      <p class="visually-hidden" role="status" aria-live="polite"></p>
-
-      <nav class="carousel-markers" aria-label="Choose a slide"></nav>
-    </section>
-  </section>
-
-  <!-- Agent -->
-  <section class="agent" id="agent" aria-labelledby="agent-title">
-    <img class="float-agent" src="img/sticker-white-tilde.webp" alt="" width="240" height="204">
-    <div class="agent-copy">
-      <p class="eyebrow on-dark">Agent first</p>
-      <h2 id="agent-title">Built for the assistant you already use</h2>
-      <p>lães runs a small MCP server on your Mac, reachable only from your Mac and only with your token. Any MCP-capable tool can connect, Claude Code included. Settings has one button that turns it on and copies a setup prompt your AI follows by itself.</p>
-      <ul class="ticks">
-        <li>Reads your weeks, tasks and notes, with full-text search across every note</li>
-        <li>Creates tasks, blocks time and writes notes linked to meetings</li>
-        <li>Respects the eye: what you hide, your agent can't see</li>
-        <li>Off until you turn it on. Nothing leaves your Mac except the calls to Microsoft</li>
-      </ul>
-    </div>
-    <figure class="terminal" aria-label="Example setup command for Claude Code">
-      <div class="term-bar" aria-hidden="true"><span></span><span></span><span></span></div>
-<pre tabindex="0"><code><span class="dim">$</span> claude mcp add --transport http laes \
-    http://127.0.0.1:52637/mcp \
-    --header "Authorization: Bearer ••••••••"
-
-<span class="dim">✓ Added laes</span>
-
-<span class="dim">tools</span>  list_events  get_event  create_event
-       list_tasks  create_task  update_task
-       search_notes  get_note  create_note
-       update_note  sync</code></pre>
-    </figure>
-  </section>
-
-  <!-- Data -->
-  <section class="data" id="data" aria-labelledby="data-title">
-    <div class="section-head">
-      <p class="eyebrow">Your data</p>
-      <h2 id="data-title">Between you and Microsoft</h2>
-    </div>
+    </ul>
+    <p class="lede">Your data stays private. It syncs through the Microsoft account you already have, and lães adds no account of its own.</p>
     <div class="facts">
       <div>
-        <h3>No lães account</h3>
-        <p>You sign in with Microsoft. lães talks to Microsoft Graph and nothing else.</p>
+        <h3>Between you and Microsoft</h3>
+        <p>You sign in with Microsoft. Your calendar, tasks and notes go to Microsoft Graph and nowhere else.</p>
       </div>
       <div>
         <h3>Works offline</h3>
@@ -292,9 +119,227 @@
       </div>
       <div>
         <h3>Native, nothing else</h3>
-        <p>Built with SwiftUI for the Mac and the iPhone. No ads and no account. The developer sees crash reports and anonymous usage counts, never your data.</p>
+        <p>Built with SwiftUI. No ads. The developer sees crash reports and anonymous usage counts, never your data.</p>
       </div>
     </div>
+  </section>
+
+  <!-- Opinionated task management -->
+  <section class="plan" id="plan" aria-labelledby="plan-title">
+    <div class="plan-copy">
+      <p class="eyebrow">Opinionated task management</p>
+      <h2 id="plan-title">Every task gets a day. Every day fits on one screen.</h2>
+      <p class="lede">Plan your tasks and your meetings together, two weeks at a time. A task sits on top of the day it is due; the meetings sit below it. Drop a task into the calendar and lães blocks the time for it in Outlook.</p>
+      <ul class="ticks dark-on-light">
+        <li><b>Two weeks, not a month.</b> This week on top, next week below. Close enough to act on, far enough to see what is coming.</li>
+        <li><b>Weeks start on Saturday.</b> Plan the week on the weekend, and keep Monday to Friday in one unbroken row. Or pick another day.</li>
+        <li><b>Overdue lands on today.</b> What you didn't finish follows you, with its original date in red.</li>
+      </ul>
+    </div>
+
+    <figure class="drop is-playing" aria-labelledby="drop-caption">
+      <div class="drop-stage" aria-hidden="true">
+        <div class="drop-col">
+          <p class="drop-day">Mon <b>23</b></p>
+          <div class="drop-tasks"><span class="drop-task">Book meeting room</span></div>
+          <div class="drop-hours">
+            <span class="drop-event" style="--from: 1; --to: 2">Weekly sync</span>
+            <span class="drop-event green" style="--from: 3; --to: 5">Budget review</span>
+          </div>
+        </div>
+        <div class="drop-col">
+          <p class="drop-day">Tue <b>24</b></p>
+          <div class="drop-tasks"><span class="drop-task">Review budget draft</span><span class="drop-task">Update project plan</span></div>
+          <div class="drop-hours">
+            <span class="drop-event" style="--from: 1; --to: 2">Daily standup</span>
+            <span class="drop-event drop-block" style="--from: 4; --to: 6">Review budget draft</span>
+            <span class="drop-event" style="--from: 7; --to: 8">Hiring sync</span>
+          </div>
+        </div>
+        <div class="drop-col">
+          <p class="drop-day">Wed <b>25</b></p>
+          <div class="drop-tasks"></div>
+          <div class="drop-hours">
+            <span class="drop-event" style="--from: 1; --to: 2">Daily standup</span>
+            <span class="drop-event green" style="--from: 5; --to: 7">Product demo</span>
+          </div>
+        </div>
+        <span class="drop-task drop-flying">Review budget draft</span>
+      </div>
+      <figcaption id="drop-caption">
+        <span>Drag a task into a day’s hours, and the time is yours.</span>
+        <button type="button" class="rotation" data-toggle-animation>
+          <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg>
+          <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg>
+          <span>Pause</span>
+        </button>
+      </figcaption>
+    </figure>
+  </section>
+
+  <!-- Agent -->
+  <section class="agent" id="agent" aria-labelledby="agent-title">
+    <img class="float-agent" src="img/sticker-white-tilde.webp" alt="" width="240" height="204">
+    <div class="agent-copy">
+      <p class="eyebrow on-dark">Your AI planning partner</p>
+      <h2 id="agent-title">Built for the assistant you already use</h2>
+      <p>lães runs a small MCP server on your Mac, reachable only from your Mac and only with your token. Any MCP-capable tool can connect, Claude Code included. Settings has one button that turns it on and copies a setup prompt your AI follows by itself.</p>
+      <ul class="ticks">
+        <li>Reads your weeks, tasks and notes, with full-text search across every note</li>
+        <li>Creates tasks, blocks time and writes notes linked to meetings</li>
+        <li>Respects the eye: what you hide, your agent can't see</li>
+        <li>Off until you turn it on. Nothing leaves your Mac except the calls to Microsoft</li>
+      </ul>
+    </div>
+    <div class="agent-demo">
+      <div class="chat" role="group" aria-label="Example conversation with an AI assistant connected to lães">
+        <p class="msg you">Here's the transcript of today's call with Acme. Prep me for the follow-up.</p>
+        <p class="msg ai"><span class="tool">search_notes</span><span class="tool">list_events</span><span class="tool">create_note</span><span class="tool">create_task</span>
+          Done. I linked a note with the open questions to <b>Acme follow-up</b> on Tuesday and added two tasks for Monday. You'll get a reminder five minutes before.</p>
+      </div>
+      <figure class="terminal" aria-label="Example setup command for Claude Code">
+        <div class="term-bar" aria-hidden="true"><span></span><span></span><span></span></div>
+<pre tabindex="0"><code><span class="dim">$</span> claude mcp add --transport http laes \
+    http://127.0.0.1:52637/mcp \
+    --header "Authorization: Bearer ••••••••"
+
+<span class="dim">✓ Added laes</span></code></pre>
+      </figure>
+    </div>
+  </section>
+
+  <!-- The three views -->
+  <section class="views" id="views" aria-labelledby="views-title">
+    <div class="section-head">
+      <p class="eyebrow">Three views, one plan</p>
+      <h2 id="views-title">Weeks to plan. Tasks to decide. Notes to prepare.</h2>
+      <p class="lede">Switch with ⌘1, ⌘2 and ⌘3. One search in the toolbar finds anything in all three.</p>
+    </div>
+
+    <article class="view" aria-labelledby="view-weeks">
+      <div class="view-copy">
+        <p class="step"><img src="img/sticker-page.webp" alt="" width="91" height="96">Weeks</p>
+        <h3 id="view-weeks">More than a calendar</h3>
+        <p>Two weeks from Saturday to Friday. Each day lists its tasks above its meetings, and a red line marks right now. Click a meeting to see who, where and when, or to start a note for it.</p>
+        <ul class="points">
+          <li>Drag a task to another day to move its due date</li>
+          <li>Categories keep the colours you gave them in Outlook</li>
+          <li>On iPhone, three days at a time; on iPad, both weeks</li>
+        </ul>
+      </div>
+      <div class="view-stage duo">
+        <div class="mac"><img src="img/mac-weeks-960.webp" srcset="img/mac-weeks-960.webp 960w, img/mac-weeks-1920.webp 1920w" sizes="(min-width: 1100px) 620px, 90vw" width="1920" height="1280" loading="lazy" alt="The two-week view on the Mac with tasks and meetings for each day."></div>
+        <div class="phone"><img src="img/ios-calendar-600.webp" width="600" height="1299" loading="lazy" alt="The iPhone calendar showing three days."></div>
+      </div>
+    </article>
+
+    <article class="view flip" aria-labelledby="view-tasks">
+      <div class="view-copy">
+        <p class="step"><img src="img/sticker-tick.webp" alt="" width="97" height="96">Tasks</p>
+        <h3 id="view-tasks">To-dos with a due day, not a someday</h3>
+        <p>Every Microsoft To Do list, with Planned one click from Overdue &amp; Today. Type “friday” or “star” into a new task and lães sets the day and the star for you. A task’s steps, reminder and note open on a card beside the list.</p>
+        <ul class="points">
+          <li>Completed shows what you finished, by day, and lets you reopen it</li>
+          <li>Repeating tasks bring up their next occurrence by themselves</li>
+          <li>Reorder your lists once; every device follows</li>
+        </ul>
+      </div>
+      <div class="view-stage duo">
+        <div class="mac"><img src="img/mac-tasks-960.webp" srcset="img/mac-tasks-960.webp 960w, img/mac-tasks-1920.webp 1920w" sizes="(min-width: 1100px) 620px, 90vw" width="1920" height="1280" loading="lazy" alt="The Planned task list on the Mac with one task’s details on a card beside it."></div>
+        <div class="phone"><img src="img/ios-drawer-600.webp" width="600" height="1299" loading="lazy" alt="A task's details in a drawer on iPhone."></div>
+      </div>
+    </article>
+
+    <article class="view" aria-labelledby="view-notes">
+      <div class="view-copy">
+        <p class="step"><img src="img/sticker-notepad.webp" alt="" width="87" height="96">Notes</p>
+        <h3 id="view-notes">Notes that know their meeting</h3>
+        <p>Link a note to a meeting and lães reminds you five minutes before it starts. Notes are plain Markdown: headings, lists, links, and to-dos you tick while reading. The formatting shows as you type and steps aside when you stop.</p>
+        <ul class="points">
+          <li>Every note is a file in your own OneDrive</li>
+          <li>On iPhone, a row of formatting keys sits above the keyboard</li>
+          <li>Notes your AI assistant writes show up after the next refresh</li>
+        </ul>
+      </div>
+      <div class="view-stage duo">
+        <div class="mac"><img src="img/mac-notes-960.webp" srcset="img/mac-notes-960.webp 960w, img/mac-notes-1920.webp 1920w" sizes="(min-width: 1100px) 620px, 90vw" width="1920" height="1280" loading="lazy" alt="A meeting note on the Mac with its agenda as a checklist."></div>
+        <div class="phone"><img src="img/ios-markdown-600.webp" width="600" height="1299" loading="lazy" alt="Editing a note's Markdown on iPhone with a formatting bar above the keyboard."></div>
+      </div>
+    </article>
+
+    <article class="search-band" aria-labelledby="search-title">
+      <div>
+        <p class="step">Search <kbd>⌘F</kbd></p>
+        <h3 id="search-title">One search for anything</h3>
+        <p>Tasks, done ones too, notes and meetings from months around today, in one field in the toolbar. Typos are forgiven, and what belongs to the view you are in comes first.</p>
+      </div>
+      <div class="mac"><img src="img/mac-search-1280.webp" width="1280" height="640" loading="lazy" alt="The search field in the Mac toolbar with results grouped into Meetings, Tasks and Notes."></div>
+    </article>
+  </section>
+
+  <!-- Customise -->
+  <section class="custom" id="custom" aria-labelledby="custom-title">
+    <div class="section-head">
+      <p class="eyebrow">Opinionated, not rigid</p>
+      <h2 id="custom-title">Endlessly customisable</h2>
+      <p class="lede">The opinions are defaults. The week’s first day, the hours you see, what counts as private, how lães looks, and even its icon are yours to change.</p>
+    </div>
+
+    <div class="custom-grid">
+      <div class="lab appearance">
+        <h3>Light, dark, or whatever your Mac says</h3>
+        <fieldset class="segmented">
+          <legend class="visually-hidden">Appearance of the preview</legend>
+          <label><input type="radio" name="appearance" value="auto" checked><span>Automatic</span></label>
+          <label><input type="radio" name="appearance" value="light"><span>Light</span></label>
+          <label><input type="radio" name="appearance" value="dark"><span>Dark</span></label>
+        </fieldset>
+        <div class="mac appearance-shots">
+          <img class="light" src="img/mac-tasks-960.webp" width="960" height="640" loading="lazy" alt="lães in its light appearance.">
+          <img class="dark" src="img/mac-tasks-dark-960.webp" width="960" height="640" loading="lazy" alt="lães in its dark appearance.">
+        </div>
+      </div>
+
+      <div class="lab icon-lab">
+        <h3>An app icon you design</h3>
+        <p>Six stickers, four corners, 143 designs. Drag one onto the icon, or off again. On this page, tap a sticker to try.</p>
+        <div class="icon-row">
+          <div class="icon-plate" role="img" aria-label="The lães app icon with a yellow tilde, a calendar page, a tick and the name.">
+            <img src="img/icon-plate.webp" alt="" width="512" height="512" loading="lazy">
+            <img class="on" src="img/sticker-yellow-tilde.webp" alt="" style="left:11.52%;top:12.3%;width:44.63%">
+            <img class="on" src="img/sticker-page.webp" alt="" style="left:52.73%;top:16.8%;width:34.77%">
+            <img class="on" src="img/sticker-tick.webp" alt="" style="left:14.3%;top:55.24%;width:31.93%">
+            <img class="on" src="img/sticker-name.webp" alt="" style="left:49.02%;top:59.29%;width:35.74%">
+          </div>
+          <div class="tray" role="group" aria-label="Stickers">
+            <button type="button" data-sticker="yellowTilde" aria-pressed="true"><img src="img/sticker-yellow-tilde.webp" alt="" width="240" height="204">Yellow tilde</button>
+            <button type="button" data-sticker="whiteTilde" aria-pressed="false"><img src="img/sticker-white-tilde.webp" alt="" width="240" height="204">White tilde</button>
+            <button type="button" data-sticker="page" aria-pressed="true"><img src="img/sticker-page.webp" alt="" width="91" height="96">Calendar page</button>
+            <button type="button" data-sticker="tick" aria-pressed="true"><img src="img/sticker-tick.webp" alt="" width="97" height="96">Tick</button>
+            <button type="button" data-sticker="notepad" aria-pressed="false"><img src="img/sticker-notepad.webp" alt="" width="87" height="96">Notepad</button>
+            <button type="button" data-sticker="name" aria-pressed="true"><img src="img/sticker-name.webp" alt="" width="280" height="163">Name</button>
+          </div>
+          <!-- The hand is Lucide's "pointer" (ISC licence), filled. -->
+          <svg class="hand" viewBox="0 0 24 24" aria-hidden="true">
+            <path class="fill" d="M6 14V4a2 2 0 0 1 4 0v5a2 2 0 0 1 4 0v1a2 2 0 0 1 4 0v1a2 2 0 0 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15z"/>
+            <path class="line" d="M22 14a8 8 0 0 1-8 8M18 11v-1a2 2 0 0 0-2-2 2 2 0 0 0-2 2M14 10V9a2 2 0 0 0-2-2 2 2 0 0 0-2 2v1M10 9.5V4a2 2 0 0 0-2-2 2 2 0 0 0-2 2v10M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>
+          </svg>
+        </div>
+        <button type="button" class="rotation" data-toggle-animation>
+          <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg>
+          <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg>
+          <span>Pause</span>
+        </button>
+        <p class="visually-hidden" role="status" aria-live="polite"></p>
+      </div>
+    </div>
+
+    <dl class="settings-list">
+      <div><dt>Your week</dt><dd>Start it on any day, and show only the hours you work.</dd></div>
+      <div><dt>Private with one switch</dt><dd>Mark categories and lists as private, then hide them all with the eye before you share your screen.</dd></div>
+      <div><dt>Reminders on your terms</dt><dd>Meeting reminders, a badge for what is due, and a morning summary. Each one has its own switch.</dd></div>
+      <div><dt>Shortcuts for everything</dt><dd>Hold ⌘ and the toolbar shows its keys.</dd></div>
+    </dl>
   </section>
 
   <!-- Beta -->
@@ -309,6 +354,11 @@
   <section class="changelog" id="changelog" aria-labelledby="changelog-title">
     <h2 id="changelog-title">Changelog</h2>
     <dl>
+      <div>
+        <dt>1.0 (build 9) <time datetime="2026-11-27">27 November 2026</time></dt>
+        <dd>On the Mac: one search for tasks, notes and meetings.</dd>
+        <dd>On the Mac: Tasks and Notes on cards, a tidier toolbar that shows its shortcuts while you hold ⌘, and a Light, Dark or Automatic appearance.</dd>
+      </div>
       <div>
         <dt>1.0 (build 8) <time datetime="2026-11-27">27 November 2026</time></dt>
         <dd>Search your tasks across every list, and a Completed view of what you finished.</dd>

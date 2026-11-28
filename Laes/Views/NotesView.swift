@@ -91,7 +91,7 @@ struct NoteEditor: View {
     #if os(macOS)
     /// One styled editor for reading and writing; the buttons float over its top, and the text scrolls under them.
     private var mac: some View {
-        MarkdownEditor(text: $draft, isEditing: $isEditing, model: editor)
+        MarkdownEditor(text: $draft, isEditing: $isEditing, model: editor, topInset: note.meta("event_title") == nil ? 24 : 56)
             .disabled(note.isSettings)   // read-only; the buttons over it stay usable
             .overlay(alignment: .topLeading) {
                 if let event = note.meta("event_title") {
@@ -255,7 +255,7 @@ struct NoteEditor: View {
         }
         #if os(macOS)   // on iPhone: the floating edit button, and hiding the keyboard finishes
         if !note.isSettings {
-            Button(isEditing ? "Done" : "Edit", systemImage: isEditing ? "checkmark" : "pencil") { isEditing.toggle() }
+            Button(isEditing ? "Done" : "Edit", systemImage: isEditing ? "checkmark" : "pencil.and.outline") { isEditing.toggle() }
                 .help(isEditing ? "Done editing (⌘S or Esc)" : "Edit the note, or double-click it")
         }
         #endif
@@ -381,30 +381,30 @@ struct NoteEditor: View {
 }
 
 #if os(macOS)
-/// Notes on the left with search, the chosen one on the right.
+/// Notes on the left with search, on the window's background; the chosen one on a card on the right.
 struct NotesView: View {
     @Environment(AppStore.self) private var store
     var isShown = true   // hidden behind another view, its fields take no focus
-    @State private var query = ""
     @State private var selected: String?
+    #if DEBUG
+    /// `-shot` draws a selected row as a black bar, so the website's screenshots are taken with none selected.
+    private var listSelection: Binding<String?> { ProcessInfo.processInfo.arguments.contains("-shot") ? .constant(nil) : $selected }
+    #else
+    private var listSelection: Binding<String?> { $selected }
+    #endif
 
     var body: some View {
         if !store.notesReady {
             NotesIntro()
         } else {
-            HStack(spacing: 0) {
-                // Search and New Note sit in the list's insets, so the sidebar background runs behind them as in Tasks.
-                List(store.noteRows(matching: query), selection: $selected) { NoteRow(hit: $0).tag($0.note.name) }
+            HStack(spacing: 10) {
+                // New Note sits in the list's inset, as New List does in Tasks. Searching is the toolbar's.
+                List(store.noteRows(matching: ""), selection: listSelection) { NoteRow(hit: $0).tag($0.note.name) }
                     .listStyle(.sidebar)
+                    .scrollContentBackground(.hidden)
                     .safeAreaInset(edge: .top, spacing: 0) {
-                        VStack(alignment: .leading, spacing: 0) {
-                            TextField("Search notes", text: $query)
-                                .textFieldStyle(.roundedBorder)
-                                .disabled(!isShown)
-                                .padding(10)
-                            if let error = store.notesError {
-                                Text(error).font(.caption).foregroundStyle(Color.overdue).padding(.horizontal, 12).padding(.bottom, 6)
-                            }
+                        if let error = store.notesError {
+                            Text(error).font(.caption).foregroundStyle(Color.overdue).padding(.horizontal, 12).padding(.vertical, 6)
                         }
                     }
                     .safeAreaInset(edge: .bottom, alignment: .leading, spacing: 0) {
@@ -414,16 +414,19 @@ struct NotesView: View {
                             .padding(.horizontal, 16)
                             .padding(.vertical, 10)
                     }
-                    .frame(width: 280)
-                Divider()
-                if let note = store.visibleNotes.first(where: { $0.name == selected }) {
-                    NoteEditor(note: note).id(note.name).disabled(!isShown)
-                } else {
-                    Text(store.visibleNotes.isEmpty ? "No notes yet" : "Select a note")
-                        .foregroundStyle(Color.subtle)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(width: 250)   // as wide as the task lists
+                Group {
+                    if let note = store.visibleNotes.first(where: { $0.name == selected }) {
+                        NoteEditor(note: note).id(note.name).disabled(!isShown)
+                    } else {
+                        Text(store.visibleNotes.isEmpty ? "No notes yet" : "Select a note")
+                            .foregroundStyle(Color.subtle)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
                 }
+                .card()
             }
+            .padding([.trailing, .bottom], 10)   // the toolbar keeps 8 pt above the cards, as above the weeks
             .onChange(of: store.openNote, initial: true) {
                 guard let name = store.openNote else { return }
                 (selected, store.openNote) = (name, nil)

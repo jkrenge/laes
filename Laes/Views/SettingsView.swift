@@ -36,6 +36,9 @@ struct SettingsView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var copiedPrompt = false
     @State private var showFeedback = false
+    #if os(macOS)
+    @AppStorage("appearance") private var appearance = Appearance.system
+    #endif
 
     #if os(iOS)
     @AppStorage("tasksStart") private var tasksStart = TasksStart.lists
@@ -120,6 +123,14 @@ struct SettingsView: View {
     }
 
     @ViewBuilder private var general: some View {
+        #if os(macOS)
+        Section {
+            Picker("Appearance", selection: $appearance) {
+                ForEach(Appearance.allCases, id: \.self) { Text($0.title).tag($0) }
+            }
+            .pickerStyle(.segmented)
+        }
+        #endif
         Section {
             Toggle("Keep notes in OneDrive", isOn: Binding(get: { store.notesEnabled }, set: { on in
                 if on, store.isSignedIn { Task { await store.enableNotes() } } else { store.notesEnabled = on }

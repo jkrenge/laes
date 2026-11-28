@@ -85,7 +85,7 @@ struct MarkdownEditor: NSViewRepresentable {
     @Binding var text: String
     @Binding var isEditing: Bool
     let model: MarkdownEditorModel
-    var topInset: CGFloat = 56   // the floating buttons sit above the start of the text; it scrolls under them
+    var topInset: CGFloat = 56   // the text starts below the floating buttons, or beside them when less; it scrolls under them
     @Environment(\.isEnabled) private var isEnabled
 
     func makeNSView(context: Context) -> NSScrollView {
@@ -102,6 +102,7 @@ struct MarkdownEditor: NSViewRepresentable {
         textView.isAutomaticLinkDetectionEnabled = false
         textView.drawsBackground = false
         textView.textContainerInset = NSSize(width: 20, height: topInset)
+        textView.buttonsClearance = NSSize(width: 180, height: max(0, 46 - topInset))   // the buttons end 46 pt down
         textView.isVerticallyResizable = true
         textView.isHorizontallyResizable = false
         textView.autoresizingMask = [.width]
@@ -244,6 +245,16 @@ final class MarkdownTextView: NSTextView {
     }
 
     var onToggleTask: (() -> Void)?
+    /// Room kept free at the text's top right for the buttons floating there, so a long first line wraps before them.
+    var buttonsClearance = NSSize.zero
+
+    override func setFrameSize(_ newSize: NSSize) {
+        super.setFrameSize(newSize)
+        guard let container = textContainer, buttonsClearance.height > 0 else { return }
+        let rect = NSRect(x: container.size.width - buttonsClearance.width, y: 0, width: buttonsClearance.width, height: buttonsClearance.height)
+        if container.exclusionPaths.first?.bounds != rect { container.exclusionPaths = [NSBezierPath(rect: rect)] }
+    }
+
     var onStartEditing: (() -> Void)?
     var onEndEditing: (() -> Void)?
     var onCommandHeld: ((Bool) -> Void)?
@@ -275,7 +286,8 @@ final class MarkdownTextView: NSTextView {
         let local = NSPoint(x: point.x - textContainerOrigin.x, y: point.y - textContainerOrigin.y)
         let index = manager.characterIndex(for: local, in: container, fractionOfDistanceBetweenInsertionPoints: nil)
         var box = NSRange()
-        guard index < storage.length, storage.attribute(.markdownTask, at: index, effectiveRange: &box) != nil else { return nil }
+        guard index < storage.length, storage.attribute(.markdownTask, at: index, longestEffectiveRange: &box,
+                                                      in: NSRange(location: 0, length: storage.length)) != nil else { return nil }
         let rect = manager.boundingRect(forGlyphRange: manager.glyphRange(forCharacterRange: box, actualCharacterRange: nil), in: container)
         return rect.insetBy(dx: -4, dy: -2).contains(local) ? box : nil
     }

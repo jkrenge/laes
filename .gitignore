@@ -1,3 +1,7 @@
 build/
 *.xcodeproj
 .DS_Store
+# Reference screenshots of other products stay local; only the notes about them are kept.
+design/**
+!design/**/
+!design/**/README.md

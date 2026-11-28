@@ -8,8 +8,8 @@ struct LaesApp: App {
     init() {
         Reporting.start()
         #if DEBUG
-        // Launched in the background, macOS sometimes restores the app with no window; open one for the shot.
-        guard ProcessInfo.processInfo.arguments.contains("-shot") else { return }
+        // Launched in the background, macOS sometimes restores the app with no window; open one for the shot or demo.
+        guard ProcessInfo.processInfo.arguments.contains("-shot") || ProcessInfo.processInfo.arguments.contains("-demo") else { return }
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             guard !NSApp.windows.contains(where: \.isVisible) else { return }
             let items = NSApp.mainMenu?.items.flatMap { $0.submenu?.items ?? [] } ?? []

@@ -88,6 +88,8 @@ struct HelpView: View {
     private static let topics: [(symbol: String, title: String, lines: [String])] = [
         ("calendar", "Getting around", [
             "The window shows two weeks, starting on the day set in Settings (Saturday unless you change it): the top row is the first week, the bottom row the week after.",
+            "The switch in the toolbar moves between Weeks, Tasks and Notes. ⌘1, ⌘2 and ⌘3 go straight to one; ⌘L goes to the next. Hold ⌘ for a moment to see the shortcuts under the toolbar's buttons.",
+            "The field in the middle of the toolbar (⌘F) searches everything: tasks, done ones too, notes, and meetings from three months back to six ahead. Typos are forgiven. Results of the view you are in come first. ↓ and ↑ move through them, Return opens one, Esc clears.",
             "Today (⌘T) jumps back to the current week. The arrows (⌘← and ⌘→) move one week at a time.",
             "Click a meeting to see its time, place, category and status. Meetings from Outlook can't be changed here; time you blocked in lães can be lengthened from its bottom edge or deleted.",
             "An all-day event tints its whole day column, unless it is marked free, cancelled or declined.",
@@ -98,17 +100,24 @@ struct HelpView: View {
             "Drag a task onto another day to change its due date, or into a day's hours to block time for it.",
             "Click empty space under a day to add a task for that day. On a full day, scroll to “Add task” at the end of the list. New tasks go to your default To Do list.",
             "Completing a repeating task brings up its next occurrence a few seconds later.",
+            "The Tasks view (⌘2) shows every list. Planned, Important, All and Completed come first, then To Do's own lists, then yours. Click a task to see its details beside the list.",
+            "Completed shows what you finished in the last 30 days, by day; Show Older reaches further back. Click a tick to reopen a task.",
         ]),
         ("note.text", "Notes", [
             "Notes are Markdown files in a OneDrive folder only lães uses. The first line, starting with #, is the title.",
             "New Note starts an empty note with the cursor in the title. Double-click a note to edit it where you clicked; ⌘S, Esc or Done stops and saves. Formatting shows as you type, with its Markdown dimmed; when you stop, the marks go.",
             "Return continues a list. ⌘B, ⌘I, ⌘U and ⌘− style the selection; ⌘L, ⌘O and ⌘T make a list, a numbered list or a to-do list; ⌘K adds a link, and Tab moves from its label to its address. Select text or hold ⌘ to see them all.",
             "To write a note for a meeting, click the meeting and choose Add Note. Five minutes before it starts, lães reminds you of its notes.",
-            "Search looks through the full text of every note. Notes written by an AI tool or on another device appear after the next refresh.",
+            "Click a to-do's box to tick it without editing. The search in the toolbar looks through the full text of every note.",
+            "Notes written by an AI tool or on another device appear after the next refresh.",
         ]),
         ("eye.slash", "Private items", [
-            "In Settings (⌘,), switch on the calendar categories and task lists that are private.",
+            "In Settings (⌘,) › Private Group, switch on the calendar categories and task lists that are private.",
             "The eye button in the toolbar (⇧⌘P) hides or shows all of them at once, for example before sharing your screen. Hidden meetings stay as plain blocks of time, without their title; hidden tasks and notes disappear.",
+        ]),
+        ("gearshape", "Settings", [
+            "General › Appearance picks Light, Dark or Automatic, which follows the system. The week's first day and the hours shown are there too.",
+            "Notifications has meeting reminders, the badge on the app icon and the morning summary.",
         ]),
         ("arrow.clockwise", "Syncing and working offline", [
             "lães refreshes every five minutes and when you press Refresh (⌘R). Hover over Refresh to see when it last synced.",

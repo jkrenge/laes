@@ -191,6 +191,22 @@ func searchTasks(_ tasks: [TodoTask], _ query: String) -> [TodoTask] {
     return zip(tasks, scores).filter { $1 > 0 }.sorted { $0.1 > $1.1 }.map(\.0)
 }
 
+/// Meetings matching a search in their title (counted double), place or attendees, best first. A repeating meeting
+/// shows once: its next occurrence, or its last if none is ahead.
+func searchEvents(_ events: [CalendarEvent], _ query: String, now: Date) -> [CalendarEvent] {
+    let candidates = events.filter { !$0.isRedacted }
+    let texts = candidates.map { ([$0.title, $0.title, $0.location ?? ""] + $0.attendees).joined(separator: " ") }
+    // Scored first: two meetings of one title may differ in who is there, and only one of them match.
+    var best: [String: (event: CalendarEvent, score: Double)] = [:]
+    for (event, score) in zip(candidates, searchScores(texts, Set(words(query)))) where score > 0 {
+        let key = event.title.lowercased()
+        guard let kept = best[key]?.event else { best[key] = (event, score); continue }
+        let better = kept.end < now ? event.start > kept.start : event.end >= now && event.start < kept.start
+        if better { best[key] = (event, score) }
+    }
+    return best.values.sorted { $0.score != $1.score ? $0.score > $1.score : $0.event.start < $1.event.start }.map(\.event)
+}
+
 /// BM25 scores of `texts` for the query words `terms`; 0 where none matches.
 private func searchScores(_ texts: [String], _ terms: Set<String>) -> [Double] {
     guard !terms.isEmpty, !texts.isEmpty else { return texts.map { _ in 0 } }

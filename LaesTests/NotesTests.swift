@@ -126,6 +126,27 @@ import Testing
     #expect(toggleTask(in: "x", line: 0) == "x")
 }
 
+@Test @MainActor func searchFindsMeetingsOnceAndPutsTheCurrentViewFirst() {
+    let now = Date(timeIntervalSince1970: 1_800_000_000), day = 86_400.0
+    func meeting(_ id: String, _ title: String, in days: Double, with attendees: [String] = []) -> CalendarEvent {
+        var event = CalendarEvent(id: id, title: title, start: now + days * day, end: now + days * day + 3600)
+        event.attendees = attendees
+        return event
+    }
+    let events = [meeting("past", "Weekly sync", in: -7), meeting("next", "Weekly sync", in: 7), meeting("later", "Weekly sync", in: 14),
+                  meeting("old", "Budget review", in: -30), meeting("older", "Budget review", in: -60),
+                  meeting("ana", "Lunch", in: 1, with: ["Ana Example"])]
+    #expect(searchEvents(events, "weekly", now: now).map(\.id) == ["next"])   // a repeating one once: the next
+    #expect(searchEvents(events, "budgt", now: now).map(\.id) == ["old"])   // none ahead: the last; typos forgiven
+    #expect(searchEvents(events, "ana", now: now).map(\.id) == ["ana"])
+    #expect(searchEvents(events, "nothing", now: now).isEmpty)
+    // Two meetings of one title: the one that matches is found, whichever is nearer.
+    let talks = [meeting("bob", "1:1", in: 1, with: ["Bob Example"]), meeting("ana2", "1:1", in: 8, with: ["Ana Example"])]
+    #expect(searchEvents(talks, "ana", now: now).map(\.id) == ["ana2"])
+    #expect(SearchResults.Kind.ordered(first: .meetings) == [.meetings, .tasks, .notes])
+    #expect(SearchResults.Kind.ordered(first: .tasks) == [.tasks, .notes, .meetings])
+}
+
 @Test func taskSearchFindsTitlesAndNotesAndGroupsDoneByDay() {
     let tasks = [
         TodoTask(id: "1", title: "Send pricing deck", listName: "Work"),

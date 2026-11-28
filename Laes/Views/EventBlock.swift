@@ -4,6 +4,7 @@ struct EventBlock: View {
     let event: CalendarEvent
     let color: Color
     let size: CGSize
+    @Environment(AppStore.self) private var store
     @State private var showDetails = false
 
     private var isTentative: Bool { event.showAs == .tentative || event.response == .tentativelyAccepted }
@@ -40,6 +41,9 @@ struct EventBlock: View {
             .help(event.title)
             .accessibilityLabel("\(event.title), \(timeRangeText(event))\(event.location.map { ", \($0)" } ?? ""), \(statusText(event))")
             .popover(isPresented: $showDetails, arrowEdge: .trailing) { EventDetails(event: event, color: color) }
+            .onChange(of: store.openEvent, initial: true) {   // found by the search
+                if store.openEvent == event.id { (showDetails, store.openEvent) = (true, nil) }
+            }
     }
 
     private var content: some View {
